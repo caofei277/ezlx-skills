@@ -1,6 +1,6 @@
 # Provider 配置模板
 
-## OpenCode Go（内置提供商，推荐）
+## OpenCode Go（内置提供商）
 
 > ⚠️ **不要手动配置！** OpenCode Go 是官方内置提供商，已预配置所有参数。在 TUI 中使用 `/connect` 命令添加。
 

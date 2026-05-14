@@ -44,7 +44,6 @@ compatibility:
 - **平台适配**：所有路径和命令必须根据当前 OS 自动适配，不得硬编码
 - **配置合并**：OpenCode 配置文件是合并而非替换；多个配置源可叠加
 - **OpenCode Go 内置 Provider**：OpenCode Go 是官方内置提供商，通过 `/connect` 命令交互配置，不要手动修改配置文件。手动配置会导致 `thinking.budgetTokens` 参数冲突错误
-- **推荐优先级**：OpenCode Go（内置）> 阿里云百炼 > 智谱。优先推荐用户使用 OpenCode Go
 
 ## 主流程
 
@@ -94,7 +93,7 @@ opencode --version
 
 **判据**：目录存在且可写。
 
-### 步骤 4：配置 OpenCode Go（内置提供商，推荐）
+### 步骤 4：配置 OpenCode Go（内置提供商）
 
 > ⚠️ OpenCode Go 是官方内置提供商，已预配置正确的 SDK 路由、Thinking 参数和上下文限制。**不要手动修改配置文件！**
 
@@ -127,7 +126,6 @@ curl -s "https://opencode.ai/zen/go/v1/models" \
 
 **判据**：`/models` 显示 OpenCode Go 模型列表（通常 12-15 个）；curl 验证返回模型列表。
 
-> **推荐**：OpenCode Go 应作为首选 Provider。第三方 Provider（阿里云百炼、智谱）仅在需要特定模型或 OpenCode Go 额度不足时作为补充。
 
 ### 步骤 5：生成配置文件（第三方 Provider）
 
@@ -181,7 +179,7 @@ opencode
 
 | 用户需求 | Provider ID | npm SDK 包 | baseURL | API Key 环境变量 | 获取地址 |
 |----------|-------------|-----------|---------|-----------------|---------|
-| OpenCode Go（推荐） | 内置（自动路由） | 自动选择 | 自动选择 | `/connect` 交互输入 | https://opencode.ai/auth |
+| OpenCode Go | 内置（自动路由） | 自动选择 | 自动选择 | `/connect` 交互输入 | https://opencode.ai/auth |
 | 智谱 Coding Plan | `zhipu-coding-plan` | `@ai-sdk/openai-compatible` | `https://open.bigmodel.cn/api/coding/paas/v4` | `ZHIPU_API_KEY` | https://open.bigmodel.cn → Coding Plan 套餐 |
 | 阿里云百炼 Coding Plan | `bailian-coding-plan` | `@ai-sdk/anthropic` | `https://coding.dashscope.aliyuncs.com/apps/anthropic/v1` | `DASHSCOPE_API_KEY` | https://bailian.console.aliyun.com |
 
@@ -195,7 +193,7 @@ opencode
 - **Windows 推荐使用 WSL**：OpenCode 官方推荐 Windows 用户通过 WSL 获得最佳体验；但也支持原生 Windows（Chocolatey/Scoop/npm 均可）
 - **`{env:VAR}` 未设置**：变量会被替换为空字符串，导致 API Key 为空，请求会鉴权失败——需提醒用户确认环境变量已设置并已重启终端
 - **OpenCode Go 使用额度超限**：OpenCode Go 有 $12/5小时、$30/周、$60/月的使用限制。额度不足时可启用 "Use balance"（消耗 Zen 积分）或切换至第三方 Provider
-- **模型在多个 Provider 中重复**：GLM-5、Qwen3.5 Plus 等模型可能在 OpenCode Go、阿里云百炼中同时存在。在 TUI 切换模型时注意区分 Provider 名称，推荐优先使用 OpenCode Go（更稳定、上下文更大）
+- **模型在多个 Provider 中重复**：GLM-5、Qwen3.5 Plus 等模型可能在 OpenCode Go、阿里云百炼中同时存在。在 TUI 切换模型时注意区分 Provider 名称
 - **`/connect` 命令不可用**：通常因 opencode 版本过旧导致。运行 `npm install -g opencode-ai@latest` 升级到最新版
 - **`@ai-sdk/openai` 导致 "Not Found"**：配制第三方 Provider 时，不要使用 `@ai-sdk/openai`（默认走 `/v1/responses`）。应使用 `@ai-sdk/openai-compatible`（走 `/v1/chat/completions`）或 `@ai-sdk/anthropic`（走 `/v1/messages`）
 
