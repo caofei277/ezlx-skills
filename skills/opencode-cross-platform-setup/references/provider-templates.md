@@ -1,5 +1,51 @@
 # Provider 配置模板
 
+## OpenCode Go（内置提供商，推荐）
+
+> ⚠️ **不要手动配置！** OpenCode Go 是官方内置提供商，已预配置所有参数。在 TUI 中使用 `/connect` 命令添加。
+
+| 模型 ID | 名称 | Context | Output | Thinking | 输入模态 |
+|---------|------|---------|--------|----------|---------|
+| `opencode-go/glm-5` | GLM-5 | 200K | 128K | enabled | text |
+| `opencode-go/glm-5.1` | GLM-5.1 | 200K | 128K | enabled | text |
+| `opencode-go/kimi-k2.5` | Kimi K2.5 | 256K | 32K | enabled | text, image |
+| `opencode-go/kimi-k2.6` | Kimi K2.6 | 256K | 96K | enabled | text, image |
+| `opencode-go/mimo-v2.5` | MiMo-V2.5 | 256K* | 32K* | enabled | text |
+| `opencode-go/mimo-v2.5-pro` | MiMo-V2.5-Pro | 256K* | 32K* | enabled | text |
+| `opencode-go/minimax-m2.5` | MiniMax M2.5 | 204.8K | 32K | enabled | text |
+| `opencode-go/minimax-m2.7` | MiniMax M2.7 | 204.8K | 32K | enabled | text |
+| `opencode-go/qwen3.5-plus` | Qwen3.5 Plus | 1M | 64K | enabled | text, image |
+| `opencode-go/qwen3.6-plus` | Qwen3.6 Plus | 1M | 64K | enabled | text, image |
+| `opencode-go/deepseek-v4-pro` | DeepSeek V4 Pro | 1M | 384K | enabled | text |
+| `opencode-go/deepseek-v4-flash` | DeepSeek V4 Flash | 1M | 384K | enabled | text |
+
+*标注 `*` 的为估算值*
+
+### 智能路由说明
+
+OpenCode Go 根据模型自动选择 API 端点：
+- **MiniMax 模型** → `/v1/messages`（Anthropic 兼容）
+- **Qwen 模型** → `/v1/chat/completions`（Alibaba 兼容）
+- **其他模型** → `/v1/chat/completions`（OpenAI 兼容）
+
+### 配置方式
+
+```
+opencode → /connect → 选择 "OpenCode Go" → 输入 API Key → /models 验证
+```
+
+### 使用限制
+
+| 周期 | 额度 |
+|------|------|
+| 5小时 | $12 |
+| 每周 | $30 |
+| 每月 | $60 |
+
+超出后可启用 "Use balance"（消耗 Zen 积分）或切换至免费模型/第三方 Provider。
+
+---
+
 ## 智谱 Coding Plan (zhipu-coding-plan)
 
 - **npm SDK**: `@ai-sdk/openai-compatible`
