@@ -34,16 +34,6 @@ OpenCode Go 根据模型自动选择 API 端点：
 opencode → /connect → 选择 "OpenCode Go" → 输入 API Key → /models 验证
 ```
 
-### 使用限制
-
-| 周期 | 额度 |
-|------|------|
-| 5小时 | $12 |
-| 每周 | $30 |
-| 每月 | $60 |
-
-超出后可启用 "Use balance"（消耗 Zen 积分）或切换至免费模型/第三方 Provider。
-
 ---
 
 ## 智谱 Coding Plan (zhipu-coding-plan)

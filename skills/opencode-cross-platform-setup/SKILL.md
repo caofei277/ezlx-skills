@@ -192,7 +192,6 @@ opencode
 - **MCP Puppeteer 启动失败**：不影响核心功能，建议用户设置 `"enabled": false` 跳过
 - **Windows 推荐使用 WSL**：OpenCode 官方推荐 Windows 用户通过 WSL 获得最佳体验；但也支持原生 Windows（Chocolatey/Scoop/npm 均可）
 - **`{env:VAR}` 未设置**：变量会被替换为空字符串，导致 API Key 为空，请求会鉴权失败——需提醒用户确认环境变量已设置并已重启终端
-- **OpenCode Go 使用额度超限**：OpenCode Go 有 $12/5小时、$30/周、$60/月的使用限制。额度不足时可启用 "Use balance"（消耗 Zen 积分）或切换至第三方 Provider
 - **模型在多个 Provider 中重复**：GLM-5、Qwen3.5 Plus 等模型可能在 OpenCode Go、阿里云百炼中同时存在。在 TUI 切换模型时注意区分 Provider 名称
 - **`/connect` 命令不可用**：通常因 opencode 版本过旧导致。运行 `npm install -g opencode-ai@latest` 升级到最新版
 - **`@ai-sdk/openai` 导致 "Not Found"**：配制第三方 Provider 时，不要使用 `@ai-sdk/openai`（默认走 `/v1/responses`）。应使用 `@ai-sdk/openai-compatible`（走 `/v1/chat/completions`）或 `@ai-sdk/anthropic`（走 `/v1/messages`）
