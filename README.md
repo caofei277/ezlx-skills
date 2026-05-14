@@ -27,6 +27,7 @@ curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.
 **功能**：
 - 自动检测平台（Windows / macOS / Linux）
 - 安装 opencode-ai（通过 npm）
+- 配置 OpenCode Go（内置提供商，通过 `/connect` 命令）
 - 配置智谱 Coding Plan / 阿里云百炼 Coding Plan Provider
 - 配置 MCP Puppeteer
 - 引导 API Key 设置（环境变量持久化）
@@ -35,8 +36,9 @@ curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.
 
 | Provider | SDK | 模型 |
 |----------|-----|------|
+| OpenCode Go（推荐） | 内置（自动路由） | GLM-5.1, DeepSeek V4 Flash/Pro, Qwen3.6 Plus, Kimi K2.6 等 12 个 |
 | 智谱 Coding Plan | @ai-sdk/openai-compatible | GLM-5, GLM-5 Turbo, GLM-4.7, GLM-5.1 |
-| 阿里云百炼 Coding Plan | @ai-sdk/anthropic | Qwen3.5 Plus, Qwen3.6 Plus, GLM-5, Kimi K2.5 等 |
+| 阿里云百炼 Coding Plan | @ai-sdk/anthropic | Qwen3.5 Plus, Qwen3.6 Plus, GLM-5, Kimi K2.5 等 9 个 |
 
 ## 手动安装
 
