@@ -132,7 +132,7 @@
 
 | 值 | 说明 |
 |----|------|
-| `opencode-go/deepseek-v4-flash` | OpenCode Go - 最便宜 |
+| `opencode-go/deepseek-v4-flash` | OpenCode Go - DeepSeek V4 Flash |
 | `opencode-go/deepseek-v4-pro` | OpenCode Go - 长输出 384K |
 | `opencode-go/qwen3.6-plus` | OpenCode Go - 1M 上下文 |
 | `opencode-go/glm-5.1` | OpenCode Go - 最强编程能力 |
