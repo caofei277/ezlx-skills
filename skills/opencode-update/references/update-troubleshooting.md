@@ -93,7 +93,7 @@ which opencode
 
 ### 解决
 
-改用 GitHub Release 手动下载方式（方式 C）更新，或临时修正 npm prefix：
+改用 GitHub Release 镜像/代理下载方式（方式 C）更新，或临时修正 npm prefix：
 
 ```bash
 # 查看正确的 npm prefix（nvm 用户）
@@ -104,7 +104,83 @@ npm config set prefix ~/.nvm/versions/node/$(node -v)
 
 ---
 
-## 问题 3：`curl -fsSL https://opencode.ai/install | bash` 失败
+## 问题 3：GFW 导致下载静默损坏（最隐蔽的问题）
+
+### 现象
+
+```bash
+curl -sL "https://github.com/.../opencode-darwin-arm64.zip" -o /tmp/opencode.zip
+echo $?
+# 0（curl 没报错！）
+
+ls -la /tmp/opencode.zip
+# -rw-r--r-- 35232142 bytes（看起来正常，但实际不完整）
+
+# 正确的文件应为 35243239 bytes
+```
+
+替换后 opencode 表面上可以启动，但实际运行的是**损坏或旧版本**的二进制文件。
+
+### 原因
+
+GFW 对 GitHub 的干扰方式不是直接阻断，而是在 TLS 握手阶段注入 RST 包或在数据传输中截断连接。curl 在某些情况下会将不完整的响应保存为文件并返回退出码 0，**不报任何错误**。
+
+这导致：
+1. 下载了一个**不完整**的 zip 文件，但 curl 没报错
+2. unzip 可能仍然能解压出二进制文件（zip 格式允许部分解压）
+3. 解压出的二进制文件是**旧版本**或**损坏**的
+4. 替换后以为更新成功，实际版本没变
+
+### 诊断
+
+```bash
+# 1. 校验 zip 完整性
+unzip -t /tmp/opencode.zip
+# 损坏文件：报错 "invalid compressed data" 或 "unexpected end"
+# 正常文件：输出 "No errors detected in compressed data"
+
+# 2. 对比文件大小
+ls -la /tmp/opencode.zip
+# 同版本的正确 zip 大小应一致，若差异超过 1MB 大概率损坏
+
+# 3. 替换后验证二进制
+OLD_SIZE=$(stat -f%z $(which opencode).bak 2>/dev/null || stat -c%s $(which opencode).bak 2>/dev/null)
+NEW_SIZE=$(stat -f%z $(which opencode) 2>/dev/null || stat -c%s $(which opencode) 2>/dev/null)
+echo "Old: ${OLD_SIZE} → New: ${NEW_SIZE}"
+# 新旧完全相同 → 替换未生效或下载到同版本
+
+file $(which opencode)
+# 正确：Mach-O 64-bit executable arm64
+# 错误：ASCII text（下载到 HTML 错误页）
+```
+
+### 解决
+
+1. **删除损坏的下载文件**，不要使用它
+2. **换用镜像下载**（推荐）：
+
+```bash
+GITHUB_URL="https://github.com/anomalyco/opencode/releases/download/<VERSION>/opencode-darwin-arm64.zip"
+curl -sL "https://ghfast.top/${GITHUB_URL}" -o /tmp/opencode.zip
+```
+
+3. **或使用代理下载**：
+
+```bash
+export HTTPS_PROXY=http://127.0.0.1:7890
+curl -sL "https://github.com/anomalyco/opencode/releases/download/<VERSION>/opencode-darwin-arm64.zip" -o /tmp/opencode.zip
+unset HTTPS_PROXY
+```
+
+4. **下载后必须校验**：
+
+```bash
+unzip -t /tmp/opencode.zip
+```
+
+---
+
+## 问题 4：`curl -fsSL https://opencode.ai/install | bash` 失败
 
 ### 现象
 
@@ -112,51 +188,54 @@ npm config set prefix ~/.nvm/versions/node/$(node -v)
 curl: (35) Recv failure: Connection reset by peer
 ```
 
-或
-
-```
-curl: (7) Failed to connect to opencode.ai
-```
-
 ### 原因
 
-- 网络防火墙或 GFW 阻断了 `opencode.ai` 的连接
-- DNS 解析失败
-- 代理未正确配置
+- `opencode.ai` 本身可达（Cloudflare CDN），但安装脚本内部从 GitHub Releases 下载二进制
+- GitHub 被 GFW 干扰 → 脚本下载阶段失败
 
 ### 解决
 
-1. 检查网络连通性：`curl -sI https://opencode.ai`
-2. 若配置了代理，确保环境变量已设置：
+1. 检查 GitHub 连通性：`curl -sI --connect-timeout 5 https://github.com`
+2. GitHub 不可达时，不要使用官方脚本，改用方式 C（镜像/代理下载）
+3. 若有代理：
    ```bash
    export HTTPS_PROXY=http://127.0.0.1:7890
+   curl -fsSL https://opencode.ai/install | bash
+   unset HTTPS_PROXY
    ```
-3. 改用方式 B（npm）或方式 C（GitHub Release 直接下载）
 
 ---
 
-## 问题 4：GitHub Release 下载超时或极慢
+## 问题 5：GitHub 镜像也不可用
 
 ### 现象
 
-```bash
-curl -sL https://github.com/anomalyco/opencode/releases/download/v1.15.0/opencode-darwin-arm64.zip -o /tmp/opencode.zip
-# 长时间无响应或速度极慢
-```
+镜像服务返回错误或超时。
 
 ### 原因
 
-GitHub releases 的 CDN（`objects.githubusercontent.com`）在某些地区（如中国大陆）访问受限。
+GitHub Release 镜像服务（ghfast.top 等）是第三方免费服务，稳定性不保证。
 
 ### 解决
 
-1. 配置代理后重试
-2. 使用 GitHub 镜像加速（如 `https://ghfast.top/https://github.com/...`）
-3. 通过 npm 下载（`npm pack opencode-ai` 获取包，但通常不含平台二进制）
+按顺序尝试以下镜像：
+
+```bash
+# 1. ghfast.top（推荐）
+curl -sL "https://ghfast.top/https://github.com/..." -o /tmp/opencode.zip
+
+# 2. gh-proxy.com
+curl -sL "https://gh-proxy.com/https://github.com/..." -o /tmp/opencode.zip
+
+# 3. ghproxy.cn
+curl -sL "https://ghproxy.cn/https://github.com/..." -o /tmp/opencode.zip
+```
+
+若所有镜像都不可用，引导用户配置代理后直连 GitHub。
 
 ---
 
-## 问题 5：更新后 `opencode --version` 挂起
+## 问题 6：更新后 `opencode --version` 挂起
 
 ### 现象
 
@@ -176,8 +255,6 @@ opencode --version
 ```bash
 file $(which opencode)
 # Mach-O 64-bit executable arm64
-
-# 或直接启动 opencode 进入 TUI，在界面内查看版本
 ```
 
 也可以通过 npm 查询最新版本对比：
@@ -188,7 +265,9 @@ npm view opencode-ai version
 
 ---
 
-## 问题 6：备份文件清理
+## 问题 7：备份与回滚
+
+### 备份文件清理
 
 更新成功后，旧版本备份文件可安全删除：
 
@@ -196,7 +275,9 @@ npm view opencode-ai version
 rm -f $(which opencode).bak
 ```
 
-若需回滚，在删除备份前执行：
+### 回滚操作
+
+若更新后 opencode 无法正常运行：
 
 ```bash
 cp $(which opencode).bak $(which opencode)

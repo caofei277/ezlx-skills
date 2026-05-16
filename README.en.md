@@ -47,11 +47,12 @@ Install and configure [OpenCode](https://opencode.ai) on Windows / macOS / Linux
 Safely update OpenCode to the latest version, handling macOS code signing, npm prefix conflicts, network issues (GFW), and other common update failures.
 
 **Features**:
-- Auto-detect current opencode installation method and version
-- Multiple update methods: official script > npm > proxy > GitHub mirror
+- Auto-detect current opencode installation method, version, and network environment
+- Prioritize GitHub mirror acceleration in GFW environments (ghfast.top etc.)
+- Multiple update methods: mirror > proxy > npm > direct
+- Download integrity verification (prevents silent corruption by GFW)
 - macOS code signing fix (resolves `zsh: killed`)
 - npm global prefix conflict detection and workaround
-- GFW network detection with proxy/mirror fallback
 - Old version backup and rollback
 
 **Common Issues Resolved**:
@@ -60,7 +61,8 @@ Safely update OpenCode to the latest version, handling macOS code signing, npm p
 |-------|-------|
 | `zsh: killed opencode` | macOS code signature invalid |
 | npm update succeeded but version unchanged | npm prefix overridden by another app |
-| `curl: (35) Connection reset` | Network blocked (GFW) |
+| `curl: (35) Connection reset` | GFW interfering with GitHub connection |
+| Download completed but file corrupted | GFW silently truncating download, curl reports no error |
 
 ### Install Specific Skills
 

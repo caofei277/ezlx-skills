@@ -47,11 +47,12 @@ curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.
 安全更新 OpenCode 到最新版本，处理 macOS 代码签名、npm prefix 冲突、网络不通（GFW）等常见更新失败问题。
 
 **功能**：
-- 自动检测当前 opencode 安装方式和版本
-- 多种更新方式：官方脚本 > npm > 代理 > GitHub 镜像
+- 自动检测当前 opencode 安装方式、版本和网络环境
+- GFW 环境下优先使用 GitHub 镜像加速（ghfast.top 等）
+- 多种更新方式：镜像 > 代理 > npm > 直连
+- 下载完整性校验（防止 GFW 静默损坏文件）
 - macOS 代码签名修复（解决 `zsh: killed` 问题）
 - npm global prefix 冲突检测与绕过
-- GFW 网络环境检测，提供代理/镜像降级方案
 - 旧版本备份与回滚
 
 **解决的常见问题**：
@@ -60,7 +61,8 @@ curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.
 |------|------|
 | `zsh: killed opencode` | macOS 代码签名失效 |
 | npm 更新成功但版本未变 | npm prefix 被其他应用覆盖 |
-| `curl: (35) Connection reset` | 网络不通（GFW 干扰） |
+| `curl: (35) Connection reset` | GFW 干扰 GitHub 连接 |
+| 下载完成但文件损坏 | GFW 静默截断下载，curl 未报错 |
 
 ### 安装指定 Skill
 
