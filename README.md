@@ -1,6 +1,6 @@
 # ezlx-skills
 
-OpenCode Agent Skills 集合，由 ezlx 团队维护。
+Agent Skills 与工具集合，由 ezlx 团队维护。目前以 OpenCode Skills 为主，后续会逐步扩展更多工具和平台支持。
 
 ## 一键安装
 
@@ -42,7 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.
 
 ### opencode-update
 
-安全更新 OpenCode 到最新版本，处理 macOS 代码签名、npm prefix 冲穿、网络不通等常见更新失败问题。
+安全更新 OpenCode 到最新版本，处理 macOS 代码签名、npm prefix 冲突、网络不通等常见更新失败问题。
 
 **功能**：
 - 自动检测当前 opencode 安装方式和版本
