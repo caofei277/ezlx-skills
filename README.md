@@ -1,6 +1,6 @@
 # ezlx-skills
 
-Agent Skills 与工具集合，由 ezlx 团队维护。目前以 OpenCode Skills 为主，后续会逐步扩展更多工具和平台支持。
+Agent Skills 与工具集合，由 ezlx 团队维护。
 
 ## 一键安装
 
