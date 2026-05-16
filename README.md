@@ -1,10 +1,10 @@
 # ezlx-skills
 
-[中文](README.zh-CN.md)
+[English](README.en.md)
 
-Agent Skills & tools collection, maintained by the ezlx team.
+Agent Skills 与工具集合，由 ezlx 团队维护。
 
-## Quick Install
+## 一键安装
 
 ### Windows (PowerShell)
 
@@ -18,61 +18,63 @@ curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.
 curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.sh | bash
 ```
 
-Skills are installed to `~/.config/opencode/skills/` (globally available).
+安装完成后，Skill 会放入 `~/.config/opencode/skills/`（全局可用）。
 
-## Available Skills
+## 可用 Skills
 
 ### opencode-cross-platform-setup
 
-Install and configure [OpenCode](https://opencode.ai) on Windows / macOS / Linux, including multiple Coding Plan Providers and MCP integration.
+在 Windows / macOS / Linux 上安装配置 [OpenCode](https://opencode.ai)，包括多 Coding Plan Provider 接入与 MCP 集成。
 
-**Features**:
-- Auto-detect platform (Windows / macOS / Linux)
-- Install opencode-ai via npm
-- Configure OpenCode Go (built-in provider, via `/connect` command)
-- Configure Zhipu Coding Plan / Alibaba Cloud Bailian Coding Plan providers
-- Configure MCP Puppeteer
-- Guide API key setup (environment variable persistence)
+**功能**：
+- 自动检测平台（Windows / macOS / Linux）
+- 安装 opencode-ai（通过 npm）
+- 配置 OpenCode Go（内置提供商，通过 `/connect` 命令）
+- 配置智谱 Coding Plan / 阿里云百炼 Coding Plan Provider
+- 配置 MCP Puppeteer
+- 引导 API Key 设置（环境变量持久化）
 
-**Supported Providers**:
+**支持的 Provider**：
 
-| Provider | SDK | Models |
-|----------|-----|--------|
-| OpenCode Go | Built-in (auto-routing) | GLM-5.1, DeepSeek V4 Flash/Pro, Qwen3.6 Plus, Kimi K2.6 and more (12 total) |
-| Zhipu Coding Plan | @ai-sdk/openai-compatible | GLM-5, GLM-5 Turbo, GLM-4.7, GLM-5.1 |
-| Alibaba Bailian Coding Plan | @ai-sdk/anthropic | Qwen3.5 Plus, Qwen3.6 Plus, GLM-5, Kimi K2.5 and more (9 total) |
+| Provider | SDK | 模型 |
+|----------|-----|------|
+| OpenCode Go | 内置（自动路由） | GLM-5.1, DeepSeek V4 Flash/Pro, Qwen3.6 Plus, Kimi K2.6 等 12 个 |
+| 智谱 Coding Plan | @ai-sdk/openai-compatible | GLM-5, GLM-5 Turbo, GLM-4.7, GLM-5.1 |
+| 阿里云百炼 Coding Plan | @ai-sdk/anthropic | Qwen3.5 Plus, Qwen3.6 Plus, GLM-5, Kimi K2.5 等 9 个 |
 
 ### opencode-update
 
-Safely update OpenCode to the latest version, handling macOS code signing, npm prefix conflicts, network issues (GFW), and other common update failures.
+安全更新 OpenCode 到最新版本，处理 macOS 代码签名、npm prefix 冲突、网络不通（GFW）等常见更新失败问题。
 
-**Features**:
-- Auto-detect current opencode installation method and version
-- Multiple update methods: official script > npm > proxy > GitHub mirror
-- macOS code signing fix (resolves `zsh: killed`)
-- npm global prefix conflict detection and workaround
-- GFW network detection with proxy/mirror fallback
-- Old version backup and rollback
+**功能**：
+- 自动检测当前 opencode 安装方式和版本
+- 多种更新方式：官方脚本 > npm > 代理 > GitHub 镜像
+- macOS 代码签名修复（解决 `zsh: killed` 问题）
+- npm global prefix 冲突检测与绕过
+- GFW 网络环境检测，提供代理/镜像降级方案
+- 旧版本备份与回滚
 
-**Common Issues Resolved**:
+**解决的常见问题**：
 
-| Issue | Cause |
-|-------|-------|
-| `zsh: killed opencode` | macOS code signature invalid |
-| npm update succeeded but version unchanged | npm prefix overridden by another app |
-| `curl: (35) Connection reset` | Network blocked (GFW) |
+| 问题 | 原因 |
+|------|------|
+| `zsh: killed opencode` | macOS 代码签名失效 |
+| npm 更新成功但版本未变 | npm prefix 被其他应用覆盖 |
+| `curl: (35) Connection reset` | 网络不通（GFW 干扰） |
 
-### Install Specific Skills
+### 安装指定 Skill
 
 ```bash
-# Install a single skill
+# 安装单个 skill
 bash install.sh opencode-update
 
-# Install multiple skills
+# 安装多个 skill
 bash install.sh opencode-cross-platform-setup opencode-update
 ```
 
-## Manual Install
+## 手动安装
+
+如果不想用脚本，也可以手动操作：
 
 ```bash
 git clone https://github.com/caofei277/ezlx-skills.git
