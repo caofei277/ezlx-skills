@@ -40,6 +40,35 @@ curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.
 | 智谱 Coding Plan | @ai-sdk/openai-compatible | GLM-5, GLM-5 Turbo, GLM-4.7, GLM-5.1 |
 | 阿里云百炼 Coding Plan | @ai-sdk/anthropic | Qwen3.5 Plus, Qwen3.6 Plus, GLM-5, Kimi K2.5 等 9 个 |
 
+### opencode-update
+
+安全更新 OpenCode 到最新版本，处理 macOS 代码签名、npm prefix 冲穿、网络不通等常见更新失败问题。
+
+**功能**：
+- 自动检测当前 opencode 安装方式和版本
+- 三种更新方式：官方脚本 > npm > GitHub Release 手动下载
+- macOS 代码签名修复（解决 `zsh: killed` 问题）
+- npm global prefix 冲突检测与绕过
+- 旧版本备份与回滚
+
+**解决的常见问题**：
+
+| 问题 | 原因 |
+|------|------|
+| `zsh: killed opencode` | macOS 代码签名失效 |
+| npm 更新成功但版本未变 | npm prefix 被其他应用覆盖 |
+| `curl: (35) Connection reset` | 网络不通 |
+
+### 安装指定 Skill
+
+```bash
+# 安装单个 skill
+bash install.sh opencode-update
+
+# 安装多个 skill
+bash install.sh opencode-cross-platform-setup opencode-update
+```
+
 ## 手动安装
 
 如果不想用脚本，也可以手动操作：
