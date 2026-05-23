@@ -188,6 +188,10 @@ opencode
 | 想临时回到原生模式 | 不卸载，直接在 opencode.json 中临时注释 plugin 条目 |
 | Provider 额度用完了 | OmO 自动 fallback，无需操作 |
 | 添加了新的 Provider | 在 `oh-my-openagent.jsonc` 的 fallback_models 中补充新平台模型 |
+| 更新 OmO 插件 | 备份配置 → `bunx oh-my-openagent@latest install --no-tui` → 检查 plugin 写法 |
+| 取消某个 Coding Plan | 从 opencode.json 删 provider 块 + 从 oh-my-openagent.json 清理该平台所有模型引用 |
+| 调整模型编排 | 编辑 `oh-my-openagent.json` 的 agents/categories，重启 opencode 生效 |
+| 更新后黑屏 | 检查 plugin 是否写成 `@latest`，改为 `"oh-my-openagent"`；还不行则还原备份 |
 
 ## 边界情况
 
@@ -197,6 +201,8 @@ opencode
 - **配置文件已存在**：合并而非替换，保留用户已有配置
 - **安装后 Tab 没有 Agent**：检查 plugin 注册是否正确，运行 `bunx oh-my-openagent doctor`
 - **卸载后 Tab 没有 Plan/Build**：确认 `plugin` 数组中已无 OmO 条目，重启 OpenCode
+- **更新后黑屏**：plugin 写法问题，确认是 `"oh-my-openagent"` 不带 `@latest`，参考 [references/uninstall-guide.md](references/uninstall-guide.md) 还原
+- **取消 Coding Plan 订阅**：需同时从 `opencode.json`（删 provider 块）和 `oh-my-openagent.json`（清理该平台所有模型引用）两处修改，否则运行时找不到模型会报错
 
 ## 参考
 
