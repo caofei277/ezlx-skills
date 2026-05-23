@@ -22,6 +22,27 @@ curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.
 
 ## 可用 Skills
 
+### omo-setup
+
+安装配置 [oh-my-openagent (OmO)](https://github.com/code-yeongyu/oh-my-openagent) 多模型编排插件，实现 AI Agent 自动按任务类型分配不同模型，跨平台额度互为备份。**支持无损卸载**，不习惯随时回退。
+
+**功能**：
+- 自动检测用户已有的 Coding Plan Provider
+- 安装 OmO 插件到 OpenCode
+- 根据用户 Provider 组合生成最优 Agent/Category 模型分配配置
+- 配置跨平台 fallback 回退链（额度用完自动切换同款模型）
+- 提供无损卸载流程，卸载后 OpenCode 恢复原始 Plan/Build 模式
+
+**模型分配策略**：
+
+| 任务类型 | 推荐模型 | 平台 |
+|----------|---------|------|
+| 编排调度 | DeepSeek V4 Flash | OpenCode Go |
+| 复杂推理 | GLM-5.1 | 智谱 / OpenCode Go |
+| 前端/UI | Qwen 3.6 Plus | 百炼 / OpenCode Go |
+| 快速任务 | DeepSeek V4 Flash | OpenCode Go |
+| 文档/写作 | Qwen 3.5 Plus | 百炼 / OpenCode Go |
+
 ### opencode-cross-platform-setup
 
 在 Windows / macOS / Linux 上安装配置 [OpenCode](https://opencode.ai)，包括多 Coding Plan Provider 接入与 MCP 集成。
