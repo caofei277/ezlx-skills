@@ -24,7 +24,7 @@ curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.
 
 ### omo-setup
 
-安装配置 [oh-my-openagent (OmO)](https://github.com/code-yeongyu/oh-my-openagent) 多模型编排插件，实现 AI Agent 自动按任务类型分配不同模型，跨平台额度互为备份。**支持无损卸载**，不习惯随时回退。
+安装配置 [oh-my-openagent (OmO)](https://github.com/code-yeongyu/oh-my-openagent) 多模型编排插件，实现 AI Agent 自动按任务类型分配不同模型，支持 OpenCode Zen 免费层，跨平台额度互为备份。**支持无损卸载**，不习惯随时回退。
 
 **功能**：
 - 自动检测用户已有的 Coding Plan Provider
@@ -35,13 +35,14 @@ curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.
 
 **模型分配策略**：
 
-| 任务类型 | 推荐模型 | 平台 |
-|----------|---------|------|
-| 编排调度 | DeepSeek V4 Flash | OpenCode Go |
-| 复杂推理 | GLM-5.1 | 智谱 / OpenCode Go |
-| 前端/UI | Qwen 3.6 Plus | 百炼 / OpenCode Go |
-| 快速任务 | DeepSeek V4 Flash | OpenCode Go |
-| 文档/写作 | Qwen 3.5 Plus | 百炼 / OpenCode Go |
+| 任务类型 | 推荐模型 | 平台 | 成本 |
+|----------|---------|------|------|
+| 编排调度 / 快速任务 | DeepSeek V4 Flash Free | OpenCode Zen | **免费** |
+| 中等任务 | DeepSeek V4 Pro | OpenCode Go | 低 |
+| 规划 / 前端 / UI / 写作 | Qwen 3.6 Plus | 百炼 / OpenCode Go | 中等 |
+| 架构咨询 / 复杂自主 | GLM-5 | 百炼 / OpenCode Go | 中等 |
+| 审查评估 | GLM-5 Turbo | 智谱 | 中等 |
+| 复杂推理 (ultrawork) | GLM-5.1 | 智谱 / OpenCode Go | 高 |
 
 ### opencode-cross-platform-setup
 
@@ -59,6 +60,7 @@ curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.
 
 | Provider | SDK | 模型 |
 |----------|-----|------|
+| OpenCode Zen | 内置（免费） | DeepSeek V4 Flash Free（免费） |
 | OpenCode Go | 内置（自动路由） | GLM-5.1, DeepSeek V4 Flash/Pro, Qwen3.6 Plus, Kimi K2.6 等 12 个 |
 | 智谱 Coding Plan | @ai-sdk/openai-compatible | GLM-5, GLM-5 Turbo, GLM-4.7, GLM-5.1 |
 | 阿里云百炼 Coding Plan | @ai-sdk/anthropic | Qwen3.5 Plus, Qwen3.6 Plus, GLM-5, Kimi K2.5 等 9 个 |

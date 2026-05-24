@@ -1,9 +1,9 @@
 ---
 name: omo-setup
-description: 安装配置 oh-my-openagent (OmO) 插件，实现多模型智能体自动编排。支持无损安装与卸载，不破坏现有 OpenCode 多平台 Provider 配置。
+description: 安装配置 oh-my-openagent (OmO) 插件，实现多模型智能体自动编排。支持 OpenCode Zen 免费层、无损安装与卸载，不破坏现有 OpenCode 多平台 Provider 配置。
 metadata:
   display_name: OmO 多模型编排插件
-  version: "1"
+  version: "2"
   compatibility:
     - filesystem
     - nodejs
@@ -56,6 +56,23 @@ bun --version
 - **安全**：API Key 不得明文写入新文件
 - **幂等**：重复执行不破坏已有配置
 
+## 模型分级策略
+
+OmO 采用四级模型分级，从免费到高端逐层递进：
+
+| 级别 | 模型 | 平台 | 适用场景 |
+|------|------|------|---------|
+| T0 免费 | DeepSeek V4 Flash Free | OpenCode Zen | 编排调度、快速任务、搜索探索 |
+| T1 低成本 | DeepSeek V4 Flash/Pro | OpenCode Go | 中等任务、一般开发 |
+| T2 中等 | GLM-5、Qwen 3.6 Plus、GLM-5 Turbo | 百炼/智谱 | 规划、架构咨询、前端、写作 |
+| T3 高端 | GLM-5.1 | 智谱/OpenCode Go | 复杂推理、ultrawork 全力模式 |
+
+**核心原则**：
+- **免费优先**：编排调度和简单任务一律使用免费的 Flash Free
+- **成本护栏**：Fallback 链只降不升，错误回退时不会跳到更贵的模型
+- **按需升级**：用户通过 `ulw` 关键词主动要求时才启用高端模型
+- **400 错误重试**：包含在 retry_on_errors 中，用于上下文溢出时自动跨模型回退
+
 ## 主流程
 
 ### 步骤 1：检测现有环境
@@ -77,9 +94,12 @@ bun --version
 
 | opencode.json 中的 provider key | OmO 中使用的前缀 |
 |------|------|
+| （OpenCode Zen 内置，无需配置） | `opencode/` |
 | （OpenCode Go 内置） | `opencode-go/` |
 | `bailian-coding-plan` | `bailian-coding-plan/` |
 | `zhipu-coding-plan` | `zhipu-coding-plan/` |
+
+> OpenCode Zen 提供 **免费** 的 DeepSeek V4 Flash Free，provider 前缀为 `opencode/`（不是 `opencode-zen/`）。无需额外配置，OpenCode 安装即可使用。
 
 **判据**：已确认 OpenCode 版本、bun 版本、用户已有的 Provider 列表。
 
@@ -97,6 +117,7 @@ bunx oh-my-openagent install --no-tui --claude=no --openai=no --gemini=no --copi
 | 智谱 Coding Plan | `--zai-coding-plan=yes`（OmO 原生支持智谱模型） |
 | Kimi for Coding | `--kimi-for-coding=yes` |
 
+> OpenCode Zen 提供免费的 DeepSeek V4 Flash Free，无需额外配置参数。
 安装完成后，`opencode.json` 的 `plugin` 数组中会新增 `"oh-my-openagent"`。
 
 **验证安装**：
@@ -141,7 +162,7 @@ opencode
 ```
 
 在 TUI 中：
-1. 按 Tab 确认可看到 Sisyphus / Prometheus 等 Agent
+1. 按 Tab 确认可看到 Sisyphus / Prometheus / Hephaestus / Atlas / Momus / Metis / Oracle / Sisyphus-Junior 等 Agent
 2. 输入 `/models` 确认模型列表正常
 
 **判据**：Tab 可切换 Agent，模型列表正常。
@@ -150,8 +171,9 @@ opencode
 
 1. **使用方式**：
    - 直接对话：和原来一样，Sisyphus 会自动编排
-   - 全自动：输入 `ulw` 或 `ultrawork`，Agent 自动探索、执行、验证
-   - 精确规划：按 Tab 切到 Prometheus，或输入 `@plan "需求"`
+   - 普通对话自动使用免费的 DeepSeek V4 Flash Free，零成本
+   - 精确规划：按 Tab 切到 Prometheus，或输入 `@plan "需求"` — 使用 Qwen 3.6 Plus 规划（中等成本）
+   - 输入 `ulw` 或 `ultrawork`，使用 GLM-5.1 全力编排（高成本，仅复杂任务使用）
    - 执行计划：`/start-work`
 
 2. **回退方式**：

@@ -1,5 +1,29 @@
 # Provider 配置模板
 
+## OpenCode Zen（免费层，内置）
+
+> OpenCode Zen 提供免费的 DeepSeek V4 Flash Free，无需 API Key，安装 OpenCode 即可使用。
+
+| 模型 ID | 名称 | Context | Output | Thinking | 输入模态 | 费用 |
+|---------|------|---------|--------|----------|---------|------|
+| `opencode/deepseek-v4-flash-free` | DeepSeek V4 Flash Free | 1M | 384K | enabled | text | **免费** |
+
+### 配置方式
+
+无需配置。在 `opencode.json` 中不添加任何 provider 条目即可使用。
+
+在 OmO 配置中直接引用：
+```jsonc
+{ "model": "opencode/deepseek-v4-flash-free" }
+```
+
+### 注意事项
+
+- Provider 前缀是 `opencode/`，**不是** `opencode-zen/`
+- 模型 ID 是 `deepseek-v4-flash-free`，**不是** `deepseek-v4-flash`
+- 免费额度用完后可通过 OmO fallback 自动切换到付费模型
+- 官方文档：https://opencode.ai/docs/zen/
+---
 ## OpenCode Go（内置提供商）
 
 > ⚠️ **不要手动配置！** OpenCode Go 是官方内置提供商，已预配置所有参数。在 TUI 中使用 `/connect` 命令添加。

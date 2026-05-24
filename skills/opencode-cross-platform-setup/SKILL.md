@@ -1,9 +1,9 @@
 ---
 name: opencode-cross-platform-setup
-description: 在 Windows/macOS/Linux 上安装配置 OpenCode，包括多 Coding Plan Provider（OpenCode Go/智谱/阿里云百炼）接入与 MCP 集成。用于新成员入职或新机器初始化时一键落地可用的 OpenCode 环境。
+description: 在 Windows/macOS/Linux 上安装配置 OpenCode，包括 OpenCode Zen 免费层、多 Coding Plan Provider（OpenCode Go/智谱/阿里云百炼）接入与 MCP 集成。用于新成员入职或新机器初始化时一键落地可用的 OpenCode 环境。
 metadata:
   display_name: OpenCode 跨平台安装配置
-  version: "4"
+  version: "5"
 compatibility:
   - filesystem
   - nodejs
@@ -15,7 +15,7 @@ compatibility:
 ## 何时使用
 
 - 用户要求"安装 OpenCode""配置 OpenCode""初始化开发环境"中的 OpenCode 部分
-- 需要为当前机器新增或变更 Coding Plan Provider（OpenCode Go / 智谱 / 阿里云百炼）
+- 需要为当前机器新增或变更 Coding Plan Provider（OpenCode Zen / OpenCode Go / 智谱 / 阿里云百炼）
 - 需要修复 OpenCode 配置文件缺失或损坏的问题
 
 ## 不适用
@@ -127,6 +127,25 @@ curl -s "https://opencode.ai/zen/go/v1/models" \
 **判据**：`/models` 显示 OpenCode Go 模型列表（通常 12-15 个）；curl 验证返回模型列表。
 
 
+### 步骤 4.5：了解 OpenCode Zen 免费层（可选）
+
+OpenCode Zen 是 OpenCode 内置的免费模型服务，无需 API Key，安装即可使用。
+
+**可用模型**：
+- `opencode/deepseek-v4-flash-free` — DeepSeek V4 Flash Free（免费）
+
+**特点**：
+- 完全免费，无需注册或订阅
+- 适合日常开发、快速问答、代码搜索
+- Provider 前缀为 `opencode/`（注意不是 `opencode-zen/`）
+- 与 OpenCode Go 付费模型互补，可在 OmO 中作为免费兜底
+
+**使用方式**：
+- 在 `opencode.json` 中无需额外配置
+- 在 OmO 配置中直接使用 `opencode/deepseek-v4-flash-free` 即可
+- 官方文档：https://opencode.ai/docs/zen/
+
+> **注意**：OpenCode Zen 的 provider ID 是 `opencode`，模型 ID 是 `deepseek-v4-flash-free`。不要写成 `opencode-zen/deepseek-v4-flash-free`。
 ### 步骤 5：生成配置文件（第三方 Provider）
 
 根据用户选择的 Provider，组装 `opencode.json`。配置模板见：
@@ -179,6 +198,7 @@ opencode
 
 | 用户需求 | Provider ID | npm SDK 包 | baseURL | API Key 环境变量 | 获取地址 |
 |----------|-------------|-----------|---------|-----------------|---------|
+| OpenCode Zen | 内置（免费层） | 自动选择 | 自动选择 | 无需 API Key | 内置免费 |
 | OpenCode Go | 内置（自动路由） | 自动选择 | 自动选择 | `/connect` 交互输入 | https://opencode.ai/auth |
 | 智谱 Coding Plan | `zhipu-coding-plan` | `@ai-sdk/openai-compatible` | `https://open.bigmodel.cn/api/coding/paas/v4` | `ZHIPU_API_KEY` | https://open.bigmodel.cn → Coding Plan 套餐 |
 | 阿里云百炼 Coding Plan | `bailian-coding-plan` | `@ai-sdk/anthropic` | `https://coding.dashscope.aliyuncs.com/apps/anthropic/v1` | `DASHSCOPE_API_KEY` | https://bailian.console.aliyun.com |
@@ -196,6 +216,7 @@ opencode
 - **`/connect` 命令不可用**：通常因 opencode 版本过旧导致。运行 `npm install -g opencode-ai@latest` 升级到最新版
 - **`@ai-sdk/openai` 导致 "Not Found"**：配制第三方 Provider 时，不要使用 `@ai-sdk/openai`（默认走 `/v1/responses`）。应使用 `@ai-sdk/openai-compatible`（走 `/v1/chat/completions`）或 `@ai-sdk/anthropic`（走 `/v1/messages`）
 
+- **OpenCode Zen 模型不可用**：确认 OpenCode 版本 v1.0.150+，Zen 免费层是内置功能。如果 `opencode/deepseek-v4-flash-free` 报 "not valid"，检查模型 ID 是否正确（不含 `-zen`）
 ## 参考
 
 - [references/provider-templates.md](references/provider-templates.md) — 各 Provider 的模型配置模板

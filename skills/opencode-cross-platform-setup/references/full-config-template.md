@@ -2,6 +2,8 @@
 
 > **关于 OpenCode Go**：OpenCode Go 是内置提供商，通过 TUI 内的 `/connect` 命令配置，无需在配置文件中手动编写。以下模板仅用于第三方 Provider（阿里云百炼 + 智谱）。
 
+> **关于 OpenCode Zen**：OpenCode Zen 提供免费的 DeepSeek V4 Flash Free，无需配置 Provider。在 OmO 中使用 `opencode/deepseek-v4-flash-free` 引用。
+
 同时配置智谱和阿里云百炼两个 Provider，并包含 MCP Puppeteer。
 
 使用时需设置环境变量：
@@ -132,6 +134,7 @@
 
 | 值 | 说明 |
 |----|------|
+| `opencode/deepseek-v4-flash-free` | OpenCode Zen - DeepSeek V4 Flash Free（**免费**） |
 | `opencode-go/deepseek-v4-flash` | OpenCode Go - DeepSeek V4 Flash |
 | `opencode-go/deepseek-v4-pro` | OpenCode Go - 长输出 384K |
 | `opencode-go/qwen3.6-plus` | OpenCode Go - 1M 上下文 |
