@@ -120,6 +120,8 @@ Sisyphus → Hephaestus → Prometheus → Atlas → （循环回 Sisyphus）
 
 **什么时候用**：多天的大型项目、需要精确规划的生产级变更。
 
+**模型**：GLM-5-Turbo（长链路执行、工具调用、指令遵循优化，⚠️高峰3倍/非高峰2倍）
+
 **能力**：
 - 像真实主管一样采访你，深挖需求
 - 自动咨询 Metis（审查遗漏）和 Momus（严格评审）
@@ -245,7 +247,7 @@ ulw 修复所有失败的测试用例
   └─ 所有任务完成后向你汇报  
 ```
 
-### 模式三：Prometheus 精确规划模式（1倍成本）
+### 模式三：Prometheus 精确规划模式（⚠️GLM-5-Turbo 长链路优化）
 
 **适用**：多天的大型项目、需要精确规划的生产级变更、你想先看计划再执行。
 
@@ -256,7 +258,7 @@ ulw 修复所有失败的测试用例
   - 方法 A：按 Tab 切到 Prometheus
   - 方法 B：在 Sisyphus 中输入 @plan "你的需求"
 
-步骤 2：回答 Prometheus 的采访问题（使用 GLM-5.1，⚠️高成本）
+步骤 2：回答 Prometheus 的采访问题（GLM-5-Turbo，长链路规划优化）
 
 步骤 3：审查生成的计划（.omo/plans/ 目录）
 
@@ -901,7 +903,7 @@ ulw 这个问题太复杂了，用最强模式帮我解决
 @plan "这个问题需要重新规划方案"
 ```
 
-效果：切换到 Prometheus（GLM-5.1，⚠️高峰3倍/非高峰2倍），重新规划思路。
+效果：切换到 Prometheus（GLM-5-Turbo，长链路规划优化，⚠️高峰3倍/非高峰2倍），重新规划思路。
 
 #### 方法 3：Tab 切换 Agent
 
@@ -911,7 +913,7 @@ ulw 这个问题太复杂了，用最强模式帮我解决
 |-----------|-------|------|------|
 | 1 | Sisyphus | DeepSeek Free | 免费 |
 | 2 | **Hephaestus** | **GLM-5.1** | ⚠️高峰3倍 |
-| 3 | Prometheus | GLM-5.1 | ⚠️3倍/2倍 |
+| 3 | Prometheus | GLM-5-Turbo | ⚠️3倍/2倍 |
 | 4 | Atlas | GLM-4.7 | 1倍 |
 
 #### 方法 4：口头指示 Sisyphus
@@ -1205,7 +1207,7 @@ opencode --version
 | Sisyphus（普通） | DeepSeek V4 Flash Free | 免费 | Zen | Go DeepSeek Flash → 智谱 GLM-4.7 |
 | Sisyphus（ultrawork） | GLM-5.1 | 3倍/2倍 | 智谱 | 智谱 GLM-5-Turbo → 智谱 GLM-4.7 |
 | Hephaestus | GLM-5.1 | 3倍/2倍 | 智谱 | 智谱 GLM-5-Turbo → 智谱 GLM-4.7 |
-| Prometheus | GLM-5.1 | ⚠️3/2倍 | 智谱 | GLM-5-Turbo → GLM-4.7 → Free |
+| Prometheus | GLM-5-Turbo | ⚠️3/2倍 | 智谱 | GLM-4.7 → Free | 长链路规划优化 |
 | Atlas | GLM-4.7 | 1倍 | 智谱 | DeepSeek Free |
 | Momus | GLM-5-Turbo | 3倍/2倍 | 智谱 | 智谱 GLM-4.7 → DeepSeek Free |
 | Oracle | GLM-4.7 | 1倍 | 智谱 | DeepSeek Free |
