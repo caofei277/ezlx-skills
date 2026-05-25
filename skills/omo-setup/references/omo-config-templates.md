@@ -60,11 +60,10 @@
       ]
     },
 
-    // 规划师：GLM-5-Turbo（长链路规划优化，⚠️高峰3倍）
+    // 规划师：GLM-4.7（1倍消耗，默认）；复杂任务可手动 /models 切换到 GLM-5-Turbo（⚠️高峰3倍）
     "prometheus": {
-      "model": "zhipu-coding-plan/glm-5-turbo",
+      "model": "zhipu-coding-plan/glm-4.7",
       "fallback_models": [
-        "zhipu-coding-plan/glm-4.7",
         "opencode/deepseek-v4-flash-free"
       ]
     },
