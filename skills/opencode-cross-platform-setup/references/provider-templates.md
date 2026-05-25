@@ -72,10 +72,10 @@ opencode → /connect → 选择 "OpenCode Go" → 输入 API Key → /models �
 
 | 模型 ID | 名称 | context | output | thinking | 输入模态 |
 |---------|------|---------|--------|----------|---------|
-| `glm-5` | GLM-5 | 202752 | 131072 | enabled (8192) | text |
-| `glm-5-turbo` | GLM-5 Turbo | 202752 | 131072 | 无 | text |
-| `glm-4.7` | GLM-4.7 | 202752 | 16384 | enabled (8192) | text |
-| `glm-5.1` | GLM-5.1 | 202752 | 131072 | enabled (8192) | text |
+| `glm-5` | GLM-5 | 200000 | 128000 | enabled (8192) | text |
+| `glm-5-turbo` | GLM-5 Turbo | 200000 | 128000 | 无 | text |
+| `glm-4.7` | GLM-4.7 | 200000 | 128000 | enabled (8192) | text |
+| `glm-5.1` | GLM-5.1 | 200000 | 128000 | enabled (8192) | text |
 
 ### Provider 配置片段
 
@@ -93,24 +93,24 @@ opencode → /connect → 选择 "OpenCode Go" → 输入 API Key → /models �
         "name": "GLM-5",
         "modalities": { "input": ["text"], "output": ["text"] },
         "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
-        "limit": { "context": 202752, "output": 131072 }
+        "limit": { "context": 200000, "output": 128000 }
       },
       "glm-5-turbo": {
         "name": "GLM-5 Turbo",
         "modalities": { "input": ["text"], "output": ["text"] },
-        "limit": { "context": 202752, "output": 131072 }
+        "limit": { "context": 200000, "output": 128000 }
       },
       "glm-4.7": {
         "name": "GLM-4.7",
         "modalities": { "input": ["text"], "output": ["text"] },
         "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
-        "limit": { "context": 202752, "output": 16384 }
+        "limit": { "context": 200000, "output": 128000 }
       },
       "glm-5.1": {
         "name": "GLM-5.1",
         "modalities": { "input": ["text"], "output": ["text"] },
         "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
-        "limit": { "context": 202752, "output": 131072 }
+        "limit": { "context": 200000, "output": 128000 }
       }
     }
   }
@@ -137,8 +137,8 @@ opencode → /connect → 选择 "OpenCode Go" → 输入 API Key → /models �
 | `qwen3-coder-next` | Qwen3 Coder Next | 262144 | 65536 | 无 | text |
 | `qwen3-coder-plus` | Qwen3 Coder Plus | 1000000 | 65536 | 无 | text |
 | `MiniMax-M2.5` | MiniMax M2.5 | 196608 | 24576 | enabled (8192) | text |
-| `glm-5` | GLM-5 | 202752 | 131072 | enabled (8192) | text |
-| `glm-4.7` | GLM-4.7 | 202752 | 16384 | enabled (8192) | text |
+| `glm-5` | GLM-5 | 200000 | 128000 | enabled (8192) | text |
+| `glm-4.7` | GLM-4.7 | 200000 | 128000 | enabled (8192) | text |
 | `kimi-k2.5` | Kimi K2.5 | 262144 | 32768 | enabled (8192) | text, image |
 
 ### Provider 配置片段
@@ -190,13 +190,13 @@ opencode → /connect → 选择 "OpenCode Go" → 输入 API Key → /models �
         "name": "GLM-5",
         "modalities": { "input": ["text"], "output": ["text"] },
         "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
-        "limit": { "context": 202752, "output": 131072 }
+        "limit": { "context": 200000, "output": 128000 }
       },
       "glm-4.7": {
         "name": "GLM-4.7",
         "modalities": { "input": ["text"], "output": ["text"] },
         "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
-        "limit": { "context": 202752, "output": 16384 }
+        "limit": { "context": 200000, "output": 128000 }
       },
       "kimi-k2.5": {
         "name": "Kimi K2.5",

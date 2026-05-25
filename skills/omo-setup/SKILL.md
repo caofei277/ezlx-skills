@@ -1,6 +1,6 @@
 ---
 name: omo-setup
-description: 安装配置 oh-my-openagent (OmO) 插件，实现多模型智能体自动编排。支持 OpenCode Zen 免费层、无损安装与卸载，不破坏现有 OpenCode 多平台 Provider 配置。
+description: 安装配置 oh-my-openagent (OmO) 插件，实现多模型智能体自动编排。支持 OpenCode Zen 免费层 + OpenCode Go + 智谱 Pro 三平台编排，内置成本护栏（GLM-5.1/GLM-5-Turbo 高峰期3倍消耗提醒）。
 metadata:
   display_name: OmO 多模型编排插件
   version: "2"
@@ -14,9 +14,10 @@ metadata:
 
 ## 何时使用
 
-- 用户希望 AI Agent 自动按任务类型分配不同模型（前端用通义、逻辑用 GLM、快速任务用 DeepSeek）
-- 用户已配置多个 Coding Plan Provider（OpenCode Go / 智谱 / 阿里云百炼），希望跨平台额度互为备份
+- 用户希望 AI Agent 自动按任务类型分配不同模型（前端用 Qwen、逻辑用 GLM、快速任务用 DeepSeek）
+- 用户已配置 Coding Plan Provider（智谱 Pro / OpenCode Go），希望跨平台额度互为备份
 - 用户想尝试 oh-my-openagent 但不确定是否适合，希望可以无损回退
+- 用户关心成本控制，需要高峰期避免高阶模型消耗过多的策略
 
 ## 不适用
 
@@ -27,8 +28,8 @@ metadata:
 ## 前置条件
 
 - OpenCode v1.0.150+ 已安装
-- 至少一个 Coding Plan Provider 已配置并可用（建议先配置好 OpenCode Go + 智谱 + 百炼三个平台）
-- bun 已安装（仅安装时需要，CLI 本身有独立二进制）
+- 至少一个 Coding Plan Provider 已配置并可用（建议先配置好 OpenCode Go + 智谱 Pro）
+- bun 已安装（仅安装时需要，CLI 本身有独立二进制）。若未安装可用 `npm install -g bun`
 
 检查命令：
 
@@ -47,7 +48,8 @@ bun --version
 - OmO 插件已注册到 `opencode.json`
 - `oh-my-openagent.jsonc` 配置文件已生成（按用户 Provider 分配 Agent 和 Category 模型）
 - 包含跨平台 fallback 回退链（额度用完自动切换）
-- 验证通过：`bunx oh-my-openagent doctor` 正常
+- 包含成本护栏策略（GLM-5.1/GLM-5-Turbo 高峰期3倍消耗提醒）
+- 验证通过：`npx oh-my-openagent doctor` 正常
 
 ## 约束
 
@@ -60,16 +62,18 @@ bun --version
 
 OmO 采用四级模型分级，从免费到高端逐层递进：
 
-| 级别 | 模型 | 平台 | 适用场景 |
-|------|------|------|---------|
-| T0 免费 | DeepSeek V4 Flash Free | OpenCode Zen | 编排调度、快速任务、搜索探索 |
-| T1 低成本 | DeepSeek V4 Flash/Pro | OpenCode Go | 中等任务、一般开发 |
-| T2 中等 | GLM-5、Qwen 3.6 Plus、GLM-5 Turbo | 百炼/智谱 | 规划、架构咨询、前端、写作 |
-| T3 高端 | GLM-5.1 | 智谱/OpenCode Go | 复杂推理、ultrawork 全力模式 |
+| 级别 | 模型 | 平台 | 成本 | 适用场景 |
+|------|------|------|------|---------|
+| T0 免费 | DeepSeek V4 Flash Free | OpenCode Zen | 免费 | 编排调度、快速任务、搜索探索 |
+| T1 主力 | GLM-4.7 | 智谱 Pro | 1倍 | 写代码主力、日常开发、中等任务 |
+| T2 前端 | Qwen 3.6 Plus | OpenCode Go | Go额度 | 前端/UI/多模态 |
+| T3 高阶 | GLM-5.1 / GLM-5-Turbo | 智谱 Pro | ⚠️高峰3倍/非高峰2倍 | 复杂推理、ultrawork、审查 |
 
 **核心原则**：
 - **免费优先**：编排调度和简单任务一律使用免费的 Flash Free
+- **主力用 GLM-4.7**：日常写代码使用 1倍消耗的 GLM-4.7
 - **成本护栏**：Fallback 链只降不升，错误回退时不会跳到更贵的模型
+- **高峰期控制**：14:00-18:00 避免使用 GLM-5.1/GLM-5-Turbo（3倍消耗）
 - **按需升级**：用户通过 `ulw` 关键词主动要求时才启用高端模型
 - **400 错误重试**：包含在 retry_on_errors 中，用于上下文溢出时自动跨模型回退
 
@@ -96,10 +100,11 @@ bun --version
 |------|------|
 | （OpenCode Zen 内置，无需配置） | `opencode/` |
 | （OpenCode Go 内置） | `opencode-go/` |
-| `bailian-coding-plan` | `bailian-coding-plan/` |
 | `zhipu-coding-plan` | `zhipu-coding-plan/` |
 
 > OpenCode Zen 提供 **免费** 的 DeepSeek V4 Flash Free，provider 前缀为 `opencode/`（不是 `opencode-zen/`）。无需额外配置，OpenCode 安装即可使用。
+>
+> **智谱 Pro 成本提醒**：GLM-5.1 和 GLM-5-Turbo 在高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍额度（限时福利：6月底前非高峰仅 1 倍）。GLM-4.7 固定 1 倍消耗。日常开发优先使用 GLM-4.7 和 DeepSeek Free。
 
 **判据**：已确认 OpenCode 版本、bun 版本、用户已有的 Provider 列表。
 
@@ -120,11 +125,13 @@ bunx oh-my-openagent install --no-tui --claude=no --openai=no --gemini=no --copi
 > OpenCode Zen 提供免费的 DeepSeek V4 Flash Free，无需额外配置参数。
 安装完成后，`opencode.json` 的 `plugin` 数组中会新增 `"oh-my-openagent"`。
 
-**验证安装**：
+验证安装：
 
 ```bash
 bunx oh-my-openagent doctor
 ```
+
+> 提示：如果 bun 未安装，可使用 `npx oh-my-openagent doctor` 替代。
 
 **判据**：`plugin` 数组包含 `"oh-my-openagent"`，doctor 检查无严重错误。
 
@@ -153,6 +160,8 @@ bunx oh-my-openagent doctor
 bunx oh-my-openagent doctor --verbose
 ```
 
+> 提示：如果 bun 未安装，可使用 `npx oh-my-openagent doctor --verbose` 替代。
+
 确认模型解析正确，无报错。
 
 启动 OpenCode 验证：
@@ -170,11 +179,12 @@ opencode
 ### 步骤 5：向用户说明
 
 1. **使用方式**：
-   - 直接对话：和原来一样，Sisyphus 会自动编排
-   - 普通对话自动使用免费的 DeepSeek V4 Flash Free，零成本
-   - 精确规划：按 Tab 切到 Prometheus，或输入 `@plan "需求"` — 使用 Qwen 3.6 Plus 规划（中等成本）
-   - 输入 `ulw` 或 `ultrawork`，使用 GLM-5.1 全力编排（高成本，仅复杂任务使用）
+   - 直接对话：和原来一样，Sisyphus 会自动编排（免费 DeepSeek Free）
+   - 日常写代码：自动使用 GLM-4.7（1倍消耗）
+   - 精确规划：按 Tab 切到 Prometheus，或输入 `@plan "需求"` — 使用 GLM-4.7 规划（1倍成本）
+   - 输入 `ulw` 或 `ultrawork`，使用 GLM-5.1 全力编排（⚠️高峰期3倍/非高峰期2倍，建议非高峰使用）
    - 执行计划：`/start-work`
+   - **高峰期（14:00-18:00）避免使用 `ulw`**，优先用 Free 和 GLM-4.7
 
 2. **回退方式**：
    - 如果不习惯，随时可以无损卸载（见步骤 6）
@@ -219,7 +229,7 @@ opencode
 
 - **bun 未安装**：引导用户安装 bun（Windows: `irm bun.sh/install.ps1 | iex`，Mac: `curl -fsSL https://bun.sh/install | bash`）
 - **OpenCode 版本过低**：先使用 `opencode-update` skill 升级到 v1.0.150+
-- **没有 OpenCode Go**：OmO 可以只用百炼/智谱的模型运行，但推荐配合 OpenCode Go 使用（模型更多、回退链更丰富）
+- **没有 OpenCode Go**：OmO 可以只用智谱的模型运行，但推荐配合 OpenCode Go 使用（Qwen 3.6 Plus 用于前端/UI/多模态）
 - **配置文件已存在**：合并而非替换，保留用户已有配置
 - **安装后 Tab 没有 Agent**：检查 plugin 注册是否正确，运行 `bunx oh-my-openagent doctor`
 - **卸载后 Tab 没有 Plan/Build**：确认 `plugin` 数组中已无 OmO 条目，重启 OpenCode
@@ -228,6 +238,7 @@ opencode
 
 ## 参考
 
+- [references/OpenCode + OmO 完整使用手册.md](references/OpenCode%20%2B%20OmO%20完整使用手册.md) — OpenCode + OmO 完整使用手册（Agent、Category、命令、工作模式、成本策略等）
 - [references/omo-config-templates.md](references/omo-config-templates.md) — 按用户 Provider 组合生成的配置模板
 - [references/uninstall-guide.md](references/uninstall-guide.md) — 无损卸载详细步骤
 - OmO 官方安装指南：https://github.com/code-yeongyu/oh-my-openagent/blob/dev/docs/guide/installation.md

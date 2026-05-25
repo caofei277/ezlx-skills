@@ -4,6 +4,8 @@
 
 > **关于 OpenCode Zen**：OpenCode Zen 提供免费的 DeepSeek V4 Flash Free，无需配置 Provider。在 OmO 中使用 `opencode/deepseek-v4-flash-free` 引用。
 
+> **智谱 Pro 成本提醒**：GLM-5.1 和 GLM-5-Turbo 高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍（限时福利：6月底前非高峰仅 1 倍）。GLM-4.7 固定 1 倍消耗。日常开发优先使用 GLM-4.7 和 DeepSeek Free。
+
 同时配置智谱和阿里云百炼两个 Provider，并包含 MCP Puppeteer。
 
 使用时需设置环境变量：
@@ -64,53 +66,53 @@
           "name": "GLM-5",
           "modalities": { "input": ["text"], "output": ["text"] },
           "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
-          "limit": { "context": 202752, "output": 131072 }
-        },
-        "glm-4.7": {
-          "name": "GLM-4.7",
-          "modalities": { "input": ["text"], "output": ["text"] },
-          "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
-          "limit": { "context": 202752, "output": 16384 }
-        },
-        "kimi-k2.5": {
-          "name": "Kimi K2.5",
-          "modalities": { "input": ["text", "image"], "output": ["text"] },
-          "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
-          "limit": { "context": 262144, "output": 32768 }
-        }
-      }
-    },
-    "zhipu-coding-plan": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "智谱 Coding Plan",
-      "options": {
-        "baseURL": "https://open.bigmodel.cn/api/coding/paas/v4",
-        "apiKey": "{env:ZHIPU_API_KEY}"
-      },
-      "models": {
-        "glm-5": {
-          "name": "GLM-5",
-          "modalities": { "input": ["text"], "output": ["text"] },
-          "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
-          "limit": { "context": 202752, "output": 131072 }
-        },
-        "glm-5-turbo": {
-          "name": "GLM-5 Turbo",
-          "modalities": { "input": ["text"], "output": ["text"] },
-          "limit": { "context": 202752, "output": 131072 }
-        },
-        "glm-5.1": {
-          "name": "GLM-5.1",
-          "modalities": { "input": ["text"], "output": ["text"] },
-          "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
-          "limit": { "context": 202752, "output": 131072 }
-        },
-        "glm-4.7": {
-          "name": "GLM-4.7",
-          "modalities": { "input": ["text"], "output": ["text"] },
-          "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
-          "limit": { "context": 202752, "output": 16384 }
-        }
+"limit": { "context": 200000, "output": 128000 }
+         },
+         "glm-4.7": {
+           "name": "GLM-4.7",
+           "modalities": { "input": ["text"], "output": ["text"] },
+           "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
+           "limit": { "context": 200000, "output": 128000 }
+         },
+         "kimi-k2.5": {
+           "name": "Kimi K2.5",
+           "modalities": { "input": ["text", "image"], "output": ["text"] },
+           "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
+           "limit": { "context": 262144, "output": 32768 }
+         }
+       }
+     },
+     "zhipu-coding-plan": {
+       "npm": "@ai-sdk/openai-compatible",
+       "name": "智谱 Coding Plan",
+       "options": {
+         "baseURL": "https://open.bigmodel.cn/api/coding/paas/v4",
+         "apiKey": "{env:ZHIPU_API_KEY}"
+       },
+       "models": {
+         "glm-5": {
+           "name": "GLM-5",
+           "modalities": { "input": ["text"], "output": ["text"] },
+           "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
+           "limit": { "context": 200000, "output": 128000 }
+         },
+         "glm-5-turbo": {
+           "name": "GLM-5 Turbo",
+           "modalities": { "input": ["text"], "output": ["text"] },
+           "limit": { "context": 200000, "output": 128000 }
+         },
+         "glm-5.1": {
+           "name": "GLM-5.1",
+           "modalities": { "input": ["text"], "output": ["text"] },
+           "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
+           "limit": { "context": 200000, "output": 128000 }
+         },
+         "glm-4.7": {
+           "name": "GLM-4.7",
+           "modalities": { "input": ["text"], "output": ["text"] },
+           "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
+           "limit": { "context": 200000, "output": 128000 }
+         }
       }
     }
   },

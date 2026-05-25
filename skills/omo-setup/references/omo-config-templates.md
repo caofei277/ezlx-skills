@@ -6,6 +6,20 @@
 
 ## 模型分层与成本说明
 
+### 三平台版（Zen + Go + 智谱 Pro）
+
+| 层级 | 模型 | 平台 | 成本 | 适用场景 |
+|------|------|------|------|----------|
+| T0 (免费) | DeepSeek V4 Flash Free | OpenCode Zen | 免费 | 编排调度、快速任务、搜索 |
+| T1 (主力) | GLM-4.7 | 智谱 Pro | 1倍 | 写代码主力、日常开发 |
+| T1.5 (前端) | Qwen 3.6 Plus | OpenCode Go | Go额度 | 前端/UI/多模态 |
+| T2 (降级) | DeepSeek V4 Flash | OpenCode Go | Go额度 | Free的付费备选 |
+| T3 (高阶) | GLM-5.1 / GLM-5-Turbo | 智谱 Pro | ⚠️高峰3倍/非高峰2倍 | 复杂推理、ultrawork |
+
+> **智谱 Pro 成本提醒**：GLM-5.1 和 GLM-5-Turbo 高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍（限时福利：6月底前非高峰仅 1 倍）。GLM-4.7 固定 1 倍消耗。日常开发优先使用 GLM-4.7 和 DeepSeek Free。
+
+### 四平台版（Zen + Go + 智谱 + 百炼）
+
 | 层级 | 模型 | 平台 | 成本 | 适用场景 |
 |------|------|------|------|----------|
 | T0 (免费) | DeepSeek V4 Flash Free | OpenCode Zen | 免费 | 编排调度、快速任务、搜索 |
@@ -14,6 +28,205 @@
 | T3 (高) | GLM-5.1 | 智谱/OpenCode Go | 高 | 复杂推理、深度自主 |
 
 **关键原则**：Fallback 链必须以同级或更低级模型结尾，绝不升级回退（成本护栏）。
+
+---
+
+## 模板零：三平台版（OpenCode Zen + OpenCode Go + 智谱 Pro）
+
+> 适合只有 OpenCode Go + 智谱 Pro 的用户。**推荐配置：GLM-4.7 为主力写代码模型，GLM-5.1 仅用于 ultrawork，日常用 DeepSeek Free 省额度。**
+
+```jsonc
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
+
+  // ===== Agents 配置 =====
+  "agents": {
+    // 主编排：免费 Flash，ultrawork 用 GLM-5.1（⚠️高峰3倍）
+    "sisyphus": {
+      "model": "opencode/deepseek-v4-flash-free",
+      "ultrawork": { "model": "zhipu-coding-plan/glm-5.1" },
+      "fallback_models": [
+        "opencode-go/deepseek-v4-flash",
+        "zhipu-coding-plan/glm-4.7"
+      ]
+    },
+
+    // 深度自主工作：GLM-5.1（⚠️高峰3倍，非高峰使用）
+    "hephaestus": {
+      "model": "zhipu-coding-plan/glm-5.1",
+      "fallback_models": [
+        "zhipu-coding-plan/glm-5-turbo",
+        "zhipu-coding-plan/glm-4.7"
+      ]
+    },
+
+    // 规划师：GLM-5.1（最强规划能力，⚠️高峰3倍）
+    "prometheus": {
+      "model": "zhipu-coding-plan/glm-5.1",
+      "fallback_models": [
+        "zhipu-coding-plan/glm-5-turbo",
+        "zhipu-coding-plan/glm-4.7",
+        "opencode/deepseek-v4-flash-free"
+      ]
+    },
+
+    // 执行编排：GLM-4.7（1倍，主力写代码）
+    "atlas": {
+      "model": "zhipu-coding-plan/glm-4.7",
+      "fallback_models": [
+        "opencode/deepseek-v4-flash-free"
+      ]
+    },
+
+    // 审查评估：GLM-5-Turbo（⚠️高峰3倍）
+    "momus": {
+      "model": "zhipu-coding-plan/glm-5-turbo",
+      "fallback_models": [
+        "zhipu-coding-plan/glm-4.7",
+        "opencode/deepseek-v4-flash-free"
+      ]
+    },
+
+    // 架构咨询：GLM-4.7（1倍）
+    "oracle": {
+      "model": "zhipu-coding-plan/glm-4.7",
+      "fallback_models": [
+        "opencode/deepseek-v4-flash-free"
+      ]
+    },
+
+    // 规划执行：GLM-4.7（1倍）
+    "metis": {
+      "model": "zhipu-coding-plan/glm-4.7",
+      "fallback_models": [
+        "opencode/deepseek-v4-flash-free"
+      ]
+    },
+
+    // 视觉分析：Qwen 3.6 Plus（Go，多模态）
+    "multimodal-looker": {
+      "model": "opencode-go/qwen3.6-plus"
+    },
+
+    // 文档搜索：免费 Flash
+    "librarian": {
+      "model": "opencode/deepseek-v4-flash-free",
+      "fallback_models": [
+        "opencode-go/deepseek-v4-flash"
+      ]
+    },
+
+    // 代码搜索：免费 Flash
+    "explore": {
+      "model": "opencode/deepseek-v4-flash-free",
+      "fallback_models": [
+        "opencode-go/deepseek-v4-flash"
+      ]
+    },
+
+    // 任务执行：GLM-4.7（主力写代码）
+    "sisyphus-junior": {
+      "model": "zhipu-coding-plan/glm-4.7",
+      "fallback_models": [
+        "opencode/deepseek-v4-flash-free"
+      ]
+    }
+  },
+
+  // ===== Categories 配置 =====
+  "categories": {
+    // 复杂推理：GLM-5.1（⚠️高峰3倍）
+    "ultrabrain": {
+      "model": "zhipu-coding-plan/glm-5.1",
+      "fallback_models": [
+        "zhipu-coding-plan/glm-5-turbo",
+        "zhipu-coding-plan/glm-4.7"
+      ]
+    },
+
+    // 深度自主：GLM-4.7（1倍）
+    "deep": {
+      "model": "zhipu-coding-plan/glm-4.7",
+      "fallback_models": [
+        "opencode/deepseek-v4-flash-free"
+      ]
+    },
+
+    // 高优先级未指定：GLM-5-Turbo（⚠️高峰3倍）
+    "unspecified-high": {
+      "model": "zhipu-coding-plan/glm-5-turbo",
+      "fallback_models": [
+        "zhipu-coding-plan/glm-4.7",
+        "opencode/deepseek-v4-flash-free"
+      ]
+    },
+
+    // 前端/视觉工程：Qwen 3.6 Plus（Go，多模态）
+    "visual-engineering": {
+      "model": "opencode-go/qwen3.6-plus",
+      "fallback_models": [
+        "zhipu-coding-plan/glm-4.7",
+        "opencode/deepseek-v4-flash-free"
+      ]
+    },
+
+    // 艺术/UI：Qwen 3.6 Plus（Go）
+    "artistry": {
+      "model": "opencode-go/qwen3.6-plus",
+      "fallback_models": [
+        "zhipu-coding-plan/glm-4.7",
+        "opencode/deepseek-v4-flash-free"
+      ]
+    },
+
+    // 写作：GLM-4.7（1倍）
+    "writing": {
+      "model": "zhipu-coding-plan/glm-4.7",
+      "fallback_models": [
+        "opencode/deepseek-v4-flash-free"
+      ]
+    },
+
+    // 快速任务：免费 Flash
+    "quick": {
+      "model": "opencode/deepseek-v4-flash-free",
+      "fallback_models": [
+        "opencode-go/deepseek-v4-flash"
+      ]
+    },
+
+    // 低优先级未指定：GLM-4.7（1倍，主力写代码）
+    "unspecified-low": {
+      "model": "zhipu-coding-plan/glm-4.7",
+      "fallback_models": [
+        "opencode/deepseek-v4-flash-free"
+      ]
+    }
+  },
+
+  // ===== 运行时回退 =====
+  // 400 包含上下文溢出场景
+  "runtime_fallback": {
+    "enabled": true,
+    "retry_on_errors": [400, 429, 500, 502, 503, 504],
+    "max_fallback_attempts": 3,
+    "cooldown_seconds": 60,
+    "notify_on_fallback": true
+  },
+
+  // ===== 功能开关 =====
+  "hashline_edit": true,
+  "sisyphus_agent": {
+    "planner_enabled": true,
+    "replace_plan": true
+  },
+  "notification": { "force_enable": true },
+  "experimental": {
+    "aggressive_truncation": true,
+    "task_system": true
+  }
+}
+```
 
 ---
 
