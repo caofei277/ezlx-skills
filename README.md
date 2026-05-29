@@ -87,6 +87,38 @@ curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.
 | `curl: (35) Connection reset` | GFW 干扰 GitHub 连接 |
 | 下载完成但文件损坏 | GFW 静默截断下载，curl 未报错 |
 
+### karpathy-guidelines
+
+基于 [Andrej Karpathy 的观察](https://x.com/karpathy/status/2015883857489522876) 的 AI 编码行为准则，源自 [multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills)。Think Before Coding、Simplicity First、Surgical Changes、Goal-Driven Execution 四原则，用于减少 LLM 常见编码错误。
+
+**功能**：
+- 加载后自动注入四原则行为指令
+- 实现前强制澄清假设、呈现歧义
+- 避免过度工程和臃肿抽象
+- 精准修改，不附带无关改动
+- 测试优先、验证闭环的工作流
+
+**适用场景**：
+| 场景 | 说明 |
+|------|------|
+| 复杂开发 | 多步骤功能实现，需要先想清楚再做 |
+| 代码审查 | 审查 AI 生成的代码是否过度复杂 |
+| Bug 修复 | 测试先行，避免附带改动 |
+| 重构 | 确保重构前后行为不变 |
+
+**使用方式**：
+
+在 OpenCode 中通过 skill 引用：
+```
+# 启动 opencode 后，在项目配置或任务中引用
+task(category="ultrabrain", load_skills=["karpathy-guidelines"], prompt="...")
+```
+
+或手动复制到 skills 目录：
+```bash
+cp -r skills/karpathy-guidelines ~/.config/opencode/skills/
+```
+
 ### 安装指定 Skill
 
 ```bash
