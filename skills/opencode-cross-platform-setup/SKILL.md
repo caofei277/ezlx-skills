@@ -1,6 +1,6 @@
 ---
 name: opencode-cross-platform-setup
-description: 在 Windows/macOS/Linux 上安装配置 OpenCode，包括 OpenCode Zen 免费层、多 Coding Plan Provider（OpenCode Go/智谱/阿里云百炼）接入与 MCP 集成。用于新成员入职或新机器初始化时一键落地可用的 OpenCode 环境。
+description: 在 Windows/macOS/Linux 上安装配置 OpenCode，包括 OpenCode Zen 免费层、多 Coding Plan Provider（OpenCode Go/智谱/阿里云百炼/火山方舟）接入与 MCP 集成。用于新成员入职或新机器初始化时一键落地可用的 OpenCode 环境。
 metadata:
   display_name: OpenCode 跨平台安装配置
   version: "5"
@@ -205,6 +205,7 @@ opencode
 
 > **智谱 Pro 成本提醒**：GLM-5.1 和 GLM-5-Turbo 作为高阶模型，高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍额度。限时福利：6月底前非高峰期仅 1 倍。日常开发优先使用 GLM-4.7（1倍消耗）和 DeepSeek Free（免费）。
 | 阿里云百炼 Coding Plan | `bailian-coding-plan` | `@ai-sdk/anthropic` | `https://coding.dashscope.aliyuncs.com/apps/anthropic/v1` | `DASHSCOPE_API_KEY` | https://bailian.console.aliyun.com |
+| 火山方舟 Coding Plan | `volcengine-plan` | `@ai-sdk/openai-compatible` | `https://ark.cn-beijing.volces.com/api/coding/v3` | `ARK_API_KEY` | https://console.volcengine.com/coding_plan |
 
 ## 边界情况
 

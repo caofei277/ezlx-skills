@@ -208,3 +208,115 @@ opencode → /connect → 选择 "OpenCode Go" → 输入 API Key → /models �
   }
 }
 ```
+
+---
+
+## 火山方舟 Coding Plan (volcengine-plan)
+
+- **npm SDK**: `@ai-sdk/openai-compatible`
+- **baseURL**: `https://ark.cn-beijing.volces.com/api/coding/v3`
+- **API Key 环境变量**: `ARK_API_KEY`（配置中写 `{env:ARK_API_KEY}`）
+- **获取地址**: https://console.volcengine.com/coding_plan → 套餐 → API Key 管理
+- **注意**: 请勿使用 `https://ark.cn-beijing.volces.com/api/v3` 作为 baseURL，该地址不会消耗 Coding Plan 额度，会产生额外费用
+
+### 模型配置说明
+
+火山方舟支持两种方式配置模型：
+
+1. **配置 Model Name（配置文件指定）**：在 `models` 节点中指定具体模型 ID，可实时切换
+2. **配置 `ark-code-latest`（控制台管理）**：使用 `ark-code-latest` 模型 ID，由控制台动态管理实际使用的模型
+
+> Model Name 支持全小写格式，也支持直接复制开通管理页面中的模型名称。
+
+### 可用模型
+
+| 模型 ID | 名称 | context | output | thinking | 输入模态 |
+|---------|------|---------|--------|----------|---------|
+| `ark-code-latest` | Ark Code Latest | 256000 | 4096 | 无 | text, image |
+| `doubao-seed-code` | 豆包 Seed Code | 256000 | 4096 | 无 | text, image |
+| `doubao-seed-2.0-code` | 豆包 Seed 2.0 Code | 256000 | 4096 | 无 | text, image |
+| `doubao-seed-2.0-pro` | 豆包 Seed 2.0 Pro | 256000 | 4096 | 无 | text, image |
+| `doubao-seed-2.0-lite` | 豆包 Seed 2.0 Lite | 256000 | 4096 | 无 | text, image |
+| `deepseek-v4-flash` | DeepSeek V4 Flash | 1024000 | 4096 | 无 | text |
+| `deepseek-v4-pro` | DeepSeek V4 Pro | 1024000 | 4096 | 无 | text |
+| `glm-5.1` | GLM-5.1 | 200000 | 4096 | 无 | text |
+| `minimax-m2.7` | MiniMax M2.7 | 200000 | 4096 | 无 | text |
+| `minimax-m3` | MiniMax M3 | 512000 | 4096 | 无 | text, image |
+| `kimi-k2.6` | Kimi K2.6 | 256000 | 4096 | 无 | text, image |
+
+### Provider 配置片段
+
+```json
+{
+  "volcengine-plan": {
+    "npm": "@ai-sdk/openai-compatible",
+    "name": "Volcano Engine",
+    "options": {
+      "baseURL": "https://ark.cn-beijing.volces.com/api/coding/v3",
+      "apiKey": "{env:ARK_API_KEY}"
+    },
+    "models": {
+      "ark-code-latest": {
+        "name": "ark-code-latest",
+        "limit": { "context": 256000, "output": 4096 },
+        "modalities": { "input": ["text", "image"], "output": ["text"] }
+      },
+      "doubao-seed-code": {
+        "name": "doubao-seed-code",
+        "limit": { "context": 256000, "output": 4096 },
+        "modalities": { "input": ["text", "image"], "output": ["text"] }
+      },
+      "doubao-seed-2.0-code": {
+        "name": "doubao-seed-2.0-code",
+        "limit": { "context": 256000, "output": 4096 },
+        "modalities": { "input": ["text", "image"], "output": ["text"] }
+      },
+      "doubao-seed-2.0-pro": {
+        "name": "doubao-seed-2.0-pro",
+        "limit": { "context": 256000, "output": 4096 },
+        "modalities": { "input": ["text", "image"], "output": ["text"] }
+      },
+      "doubao-seed-2.0-lite": {
+        "name": "doubao-seed-2.0-lite",
+        "limit": { "context": 256000, "output": 4096 },
+        "modalities": { "input": ["text", "image"], "output": ["text"] }
+      },
+      "deepseek-v4-flash": {
+        "name": "deepseek-v4-flash",
+        "limit": { "context": 1024000, "output": 4096 }
+      },
+      "deepseek-v4-pro": {
+        "name": "deepseek-v4-pro",
+        "limit": { "context": 1024000, "output": 4096 }
+      },
+      "glm-5.1": {
+        "name": "glm-5.1",
+        "limit": { "context": 200000, "output": 4096 },
+        "modalities": { "input": ["text"], "output": ["text"] }
+      },
+      "minimax-m2.7": {
+        "name": "minimax-m2.7",
+        "limit": { "context": 200000, "output": 4096 },
+        "modalities": { "input": ["text"], "output": ["text"] }
+      },
+      "minimax-m3": {
+        "name": "minimax-m3",
+        "limit": { "context": 512000, "output": 4096 },
+        "modalities": { "input": ["text", "image"], "output": ["text"] }
+      },
+      "kimi-k2.6": {
+        "name": "kimi-k2.6",
+        "limit": { "context": 256000, "output": 4096 },
+        "modalities": { "input": ["text", "image"], "output": ["text"] }
+      }
+    }
+  }
+}
+```
+
+### 注意事项
+
+- `volcengine-plan.models` 节点下有两处（对象键、`name` 字段）需替换为同一 Model Name，切勿遗漏
+- 若需开启模型图片理解能力，需在模型配置节点下新增 `"modalities": {"input": ["text", "image"], "output": ["text"]}`
+- Model Name 不支持配置为 `Auto`，如需使用请通过控制台切换该模式
+- 火山方舟也兼容 Anthropic 接口协议，使用 baseURL: `https://ark.cn-beijing.volces.com/api/coding`（需配合 `@ai-sdk/anthropic` SDK）

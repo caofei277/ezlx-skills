@@ -1,6 +1,6 @@
 # 完整配置模板（多 Provider + MCP）
 
-> **关于 OpenCode Go**：OpenCode Go 是内置提供商，通过 TUI 内的 `/connect` 命令配置，无需在配置文件中手动编写。以下模板仅用于第三方 Provider（阿里云百炼 + 智谱）。
+> **关于 OpenCode Go**：OpenCode Go 是内置提供商，通过 TUI 内的 `/connect` 命令配置，无需在配置文件中手动编写。以下模板仅用于第三方 Provider（阿里云百炼 + 智谱 + 火山方舟）。
 
 > **关于 OpenCode Zen**：OpenCode Zen 提供免费的 DeepSeek V4 Flash Free，无需配置 Provider。在 OmO 中使用 `opencode/deepseek-v4-flash-free` 引用。
 
@@ -11,6 +11,7 @@
 使用时需设置环境变量：
 - `ZHIPU_API_KEY` — 智谱 API Key
 - `DASHSCOPE_API_KEY` — 阿里云百炼 API Key
+- `ARK_API_KEY` — 火山方舟 API Key（如使用 volcengine-plan）
 
 环境变量持久化方式：
 - macOS/Linux：将 `export ZHIPU_API_KEY="xxx"` 写入 `~/.bashrc` 或 `~/.zshrc`
@@ -130,6 +131,61 @@
 > - Windows: `C:\\Program Files\\nodejs\\npx.cmd`
 > - macOS/Linux: `npx`
 
+---
+
+## 火山方舟 Coding Plan 配置
+
+可通过替换顶层 `model` 和添加 `volcengine-plan` provider 来使用火山方舟。
+
+使用前设置环境变量：
+- `ARK_API_KEY` — 火山方舟 API Key
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "volcengine-plan/ark-code-latest",
+  "provider": {
+    "volcengine-plan": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Volcano Engine",
+      "options": {
+        "baseURL": "https://ark.cn-beijing.volces.com/api/coding/v3",
+        "apiKey": "{env:ARK_API_KEY}"
+      },
+      "models": {
+        "ark-code-latest": {
+          "name": "ark-code-latest",
+          "limit": { "context": 256000, "output": 4096 },
+          "modalities": { "input": ["text", "image"], "output": ["text"] }
+        },
+        "doubao-seed-2.0-code": {
+          "name": "doubao-seed-2.0-code",
+          "limit": { "context": 256000, "output": 4096 },
+          "modalities": { "input": ["text", "image"], "output": ["text"] }
+        },
+        "deepseek-v4-flash": {
+          "name": "deepseek-v4-flash",
+          "limit": { "context": 1024000, "output": 4096 }
+        },
+        "deepseek-v4-pro": {
+          "name": "deepseek-v4-pro",
+          "limit": { "context": 1024000, "output": 4096 }
+        },
+        "kimi-k2.6": {
+          "name": "kimi-k2.6",
+          "limit": { "context": 256000, "output": 4096 },
+          "modalities": { "input": ["text", "image"], "output": ["text"] }
+        }
+      }
+    }
+  }
+}
+```
+
+> 完整模型列表及配置见 [provider-templates.md](references/provider-templates.md#火山方舟-coding-plan-volcengine-plan)。
+
+---
+
 ## 切换默认模型
 
 修改顶层 `model` 字段即可。
@@ -145,5 +201,12 @@
 | `bailian-coding-plan/glm-5` | 百炼 GLM-5 |
 | `zhipu-coding-plan/glm-5.1` | 智谱 GLM-5.1 |
 | `zhipu-coding-plan/glm-5` | 智谱 GLM-5 |
+| `volcengine-plan/ark-code-latest` | 火山方舟 Ark Code Latest（控制台管理） |
+| `volcengine-plan/doubao-seed-2.0-code` | 火山方舟 豆包 Seed 2.0 Code |
+| `volcengine-plan/doubao-seed-code` | 火山方舟 豆包 Seed Code |
+| `volcengine-plan/deepseek-v4-flash` | 火山方舟 DeepSeek V4 Flash（1M 上下文） |
+| `volcengine-plan/deepseek-v4-pro` | 火山方舟 DeepSeek V4 Pro（1M 上下文） |
+| `volcengine-plan/kimi-k2.6` | 火山方舟 Kimi K2.6 |
+| `volcengine-plan/minimax-m3` | 火山方舟 MiniMax M3 |
 
 运行时临时切换：`opencode -m <provider>/<model>`
