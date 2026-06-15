@@ -90,31 +90,30 @@
          "baseURL": "https://open.bigmodel.cn/api/coding/paas/v4",
          "apiKey": "{env:ZHIPU_API_KEY}"
        },
-       "models": {
-         "glm-5": {
-           "name": "GLM-5",
-           "modalities": { "input": ["text"], "output": ["text"] },
-           "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
-           "limit": { "context": 200000, "output": 128000 }
-         },
-         "glm-5-turbo": {
-           "name": "GLM-5 Turbo",
-           "modalities": { "input": ["text"], "output": ["text"] },
-           "limit": { "context": 200000, "output": 128000 }
-         },
-         "glm-5.1": {
-           "name": "GLM-5.1",
-           "modalities": { "input": ["text"], "output": ["text"] },
-           "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
-           "limit": { "context": 200000, "output": 128000 }
-         },
-         "glm-4.7": {
-           "name": "GLM-4.7",
-           "modalities": { "input": ["text"], "output": ["text"] },
-           "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
-           "limit": { "context": 200000, "output": 128000 }
-         }
-      }
+        "models": {
+          "glm-5.2": {
+            "name": "GLM-5.2",
+            "modalities": { "input": ["text"], "output": ["text"] },
+            "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
+            "limit": { "context": 200000, "output": 128000 }
+          },
+          "glm-5-turbo": {
+            "name": "GLM-5 Turbo",
+            "modalities": { "input": ["text"], "output": ["text"] },
+            "limit": { "context": 200000, "output": 128000 }
+          },
+          "glm-4.7": {
+            "name": "GLM-4.7",
+            "modalities": { "input": ["text"], "output": ["text"] },
+            "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
+            "limit": { "context": 200000, "output": 128000 }
+          },
+          "glm-4.5-air": {
+            "name": "GLM-4.5-Air",
+            "modalities": { "input": ["text"], "output": ["text"] },
+            "limit": { "context": 200000, "output": 128000 }
+          }
+       }
     }
   },
   "mcp": {
@@ -226,11 +225,13 @@
 | `opencode-go/deepseek-v4-flash` | OpenCode Go - DeepSeek V4 Flash |
 | `opencode-go/deepseek-v4-pro` | OpenCode Go - 长输出 384K |
 | `opencode-go/qwen3.6-plus` | OpenCode Go - 1M 上下文 |
-| `opencode-go/glm-5.1` | OpenCode Go - 最强编程能力 |
+| `opencode-go/glm-5.2` | OpenCode Go - 最强编程能力 |
 | `bailian-coding-plan/qwen3.5-plus` | 百炼 Qwen3.5 Plus |
 | `bailian-coding-plan/glm-5` | 百炼 GLM-5 |
-| `zhipu-coding-plan/glm-5.1` | 智谱 GLM-5.1 |
-| `zhipu-coding-plan/glm-5` | 智谱 GLM-5 |
+| `zhipu-coding-plan/glm-5.2` | 智谱 GLM-5.2 |
+| `zhipu-coding-plan/glm-5-turbo` | 智谱 GLM-5-Turbo |
+| `zhipu-coding-plan/glm-4.7` | 智谱 GLM-4.7 |
+| `zhipu-coding-plan/glm-4.5-air` | 智谱 GLM-4.5-Air |
 | `volcengine-plan/ark-code-latest` | 火山方舟 Ark Code Latest（控制台管理） |
 | `volcengine-plan/doubao-seed-code` | 火山方舟 豆包 Seed Code |
 | `volcengine-plan/doubao-seed-2.0-code` | 火山方舟 豆包 Seed 2.0 Code |

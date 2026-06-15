@@ -156,7 +156,7 @@ OpenCode Zen 是 OpenCode 内置的免费模型服务，无需 API Key，安装�
 
 关键规则：
 - 若用户已通过步骤 4 配置 OpenCode Go，此步骤可选（仅补充第三方 Provider）
-- `model` 字段设为用户选择的主模型（默认 `opencode-go/deepseek-v4-flash`，也可指定 `zhipu-coding-plan/glm-5.1` 等）
+- `model` 字段设为用户选择的主模型（默认 `opencode-go/deepseek-v4-flash`，也可指定 `zhipu-coding-plan/glm-5.2` 等）
 - MCP Puppeteer 命令路径按步骤 1 的平台结果填入
 - `apiKey` 字段使用 OpenCode 变量语法 `{env:环境变量名}`，不得硬编码明文。例如：`{env:ZHIPU_API_KEY}`
 - 也支持从文件读取：`{file:~/.secrets/zhipu-key}`
@@ -203,7 +203,7 @@ opencode
 | OpenCode Go | 内置（自动路由） | 自动选择 | 自动选择 | `/connect` 交互输入 | https://opencode.ai/auth |
 | 智谱 Coding Plan | `zhipu-coding-plan` | `@ai-sdk/openai-compatible` | `https://open.bigmodel.cn/api/coding/paas/v4` | `ZHIPU_API_KEY` | https://open.bigmodel.cn → Coding Plan 套餐 |
 
-> **智谱 Pro 成本提醒**：GLM-5.1 和 GLM-5-Turbo 作为高阶模型，高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍额度。限时福利：6月底前非高峰期仅 1 倍。日常开发优先使用 GLM-4.7（1倍消耗）和 DeepSeek Free（免费）。
+> **智谱 Pro 成本提醒**：GLM-5.2 和 GLM-5-Turbo 作为高阶模型，高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍额度。限时福利：6月底前非高峰期仅 1 倍。日常开发优先使用 GLM-4.7（1倍消耗）、GLM-4.5-Air（更低成本）和 DeepSeek Free（免费）。
 | 阿里云百炼 Coding Plan | `bailian-coding-plan` | `@ai-sdk/anthropic` | `https://coding.dashscope.aliyuncs.com/apps/anthropic/v1` | `DASHSCOPE_API_KEY` | https://bailian.console.aliyun.com |
 | 火山方舟 Coding Plan | `volcengine-plan` | `@ai-sdk/openai-compatible` | `https://ark.cn-beijing.volces.com/api/coding/v3` | `ARK_API_KEY` | https://console.volcengine.com/coding_plan |
 

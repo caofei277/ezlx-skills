@@ -72,10 +72,10 @@ opencode → /connect → 选择 "OpenCode Go" → 输入 API Key → /models �
 
 | 模型 ID | 名称 | context | output | thinking | 输入模态 |
 |---------|------|---------|--------|----------|---------|
-| `glm-5` | GLM-5 | 200000 | 128000 | enabled (8192) | text |
+| `glm-5.2` | GLM-5.2 | 200000 | 128000 | enabled (8192) | text |
 | `glm-5-turbo` | GLM-5 Turbo | 200000 | 128000 | 无 | text |
 | `glm-4.7` | GLM-4.7 | 200000 | 128000 | enabled (8192) | text |
-| `glm-5.1` | GLM-5.1 | 200000 | 128000 | enabled (8192) | text |
+| `glm-4.5-air` | GLM-4.5-Air | 200000 | 128000 | 无 | text |
 
 ### Provider 配置片段
 
@@ -89,8 +89,8 @@ opencode → /connect → 选择 "OpenCode Go" → 输入 API Key → /models �
       "apiKey": "{env:ZHIPU_API_KEY}"
     },
     "models": {
-      "glm-5": {
-        "name": "GLM-5",
+      "glm-5.2": {
+        "name": "GLM-5.2",
         "modalities": { "input": ["text"], "output": ["text"] },
         "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
         "limit": { "context": 200000, "output": 128000 }
@@ -106,10 +106,9 @@ opencode → /connect → 选择 "OpenCode Go" → 输入 API Key → /models �
         "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
         "limit": { "context": 200000, "output": 128000 }
       },
-      "glm-5.1": {
-        "name": "GLM-5.1",
+      "glm-4.5-air": {
+        "name": "GLM-4.5-Air",
         "modalities": { "input": ["text"], "output": ["text"] },
-        "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
         "limit": { "context": 200000, "output": 128000 }
       }
     }
