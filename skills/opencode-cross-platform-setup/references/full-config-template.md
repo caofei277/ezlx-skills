@@ -158,8 +158,23 @@
           "limit": { "context": 256000, "output": 4096 },
           "modalities": { "input": ["text", "image"], "output": ["text"] }
         },
+        "doubao-seed-code": {
+          "name": "doubao-seed-code",
+          "limit": { "context": 256000, "output": 4096 },
+          "modalities": { "input": ["text", "image"], "output": ["text"] }
+        },
         "doubao-seed-2.0-code": {
           "name": "doubao-seed-2.0-code",
+          "limit": { "context": 256000, "output": 4096 },
+          "modalities": { "input": ["text", "image"], "output": ["text"] }
+        },
+        "doubao-seed-2.0-pro": {
+          "name": "doubao-seed-2.0-pro",
+          "limit": { "context": 256000, "output": 4096 },
+          "modalities": { "input": ["text", "image"], "output": ["text"] }
+        },
+        "doubao-seed-2.0-lite": {
+          "name": "doubao-seed-2.0-lite",
           "limit": { "context": 256000, "output": 4096 },
           "modalities": { "input": ["text", "image"], "output": ["text"] }
         },
@@ -170,6 +185,21 @@
         "deepseek-v4-pro": {
           "name": "deepseek-v4-pro",
           "limit": { "context": 1024000, "output": 4096 }
+        },
+        "glm-5.1": {
+          "name": "glm-5.1",
+          "limit": { "context": 200000, "output": 4096 },
+          "modalities": { "input": ["text"], "output": ["text"] }
+        },
+        "minimax-m2.7": {
+          "name": "minimax-m2.7",
+          "limit": { "context": 200000, "output": 4096 },
+          "modalities": { "input": ["text"], "output": ["text"] }
+        },
+        "minimax-m3": {
+          "name": "minimax-m3",
+          "limit": { "context": 512000, "output": 4096 },
+          "modalities": { "input": ["text", "image"], "output": ["text"] }
         },
         "kimi-k2.6": {
           "name": "kimi-k2.6",
@@ -202,11 +232,15 @@
 | `zhipu-coding-plan/glm-5.1` | 智谱 GLM-5.1 |
 | `zhipu-coding-plan/glm-5` | 智谱 GLM-5 |
 | `volcengine-plan/ark-code-latest` | 火山方舟 Ark Code Latest（控制台管理） |
-| `volcengine-plan/doubao-seed-2.0-code` | 火山方舟 豆包 Seed 2.0 Code |
 | `volcengine-plan/doubao-seed-code` | 火山方舟 豆包 Seed Code |
+| `volcengine-plan/doubao-seed-2.0-code` | 火山方舟 豆包 Seed 2.0 Code |
+| `volcengine-plan/doubao-seed-2.0-pro` | 火山方舟 豆包 Seed 2.0 Pro |
+| `volcengine-plan/doubao-seed-2.0-lite` | 火山方舟 豆包 Seed 2.0 Lite |
 | `volcengine-plan/deepseek-v4-flash` | 火山方舟 DeepSeek V4 Flash（1M 上下文） |
 | `volcengine-plan/deepseek-v4-pro` | 火山方舟 DeepSeek V4 Pro（1M 上下文） |
+| `volcengine-plan/glm-5.1` | 火山方舟 GLM-5.1 |
+| `volcengine-plan/minimax-m2.7` | 火山方舟 MiniMax M2.7 |
+| `volcengine-plan/minimax-m3` | 火山方舟 MiniMax M3（512K 上下文） |
 | `volcengine-plan/kimi-k2.6` | 火山方舟 Kimi K2.6 |
-| `volcengine-plan/minimax-m3` | 火山方舟 MiniMax M3 |
 
 运行时临时切换：`opencode -m <provider>/<model>`
