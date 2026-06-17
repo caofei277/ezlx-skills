@@ -1,6 +1,6 @@
 ---
 name: omo-setup
-description: 安装配置 oh-my-openagent (OmO) 插件，实现多模型智能体自动编排。支持 OpenCode Zen 免费层 + OpenCode Go + 智谱 Pro 三平台编排，内置成本护栏（GLM-5.1/GLM-5-Turbo 高峰期3倍消耗提醒）。
+description: 安装配置 oh-my-openagent (OmO) 插件，实现多模型智能体自动编排。支持 OpenCode Zen 免费层 + OpenCode Go + 智谱 Pro 三平台编排，内置成本护栏（GLM-5.2/GLM-5-Turbo 高峰期3倍消耗提醒）。
 metadata:
   display_name: OmO 多模型编排插件
   version: "2"
@@ -48,7 +48,7 @@ bun --version
 - OmO 插件已注册到 `opencode.json`
 - `oh-my-openagent.jsonc` 配置文件已生成（按用户 Provider 分配 Agent 和 Category 模型）
 - 包含跨平台 fallback 回退链（额度用完自动切换）
-- 包含成本护栏策略（GLM-5.1/GLM-5-Turbo 高峰期3倍消耗提醒）
+- 包含成本护栏策略（GLM-5.2/GLM-5-Turbo 高峰期3倍消耗提醒）
 - 验证通过：`npx oh-my-openagent doctor` 正常
 
 ## 约束
@@ -67,13 +67,13 @@ OmO 采用四级模型分级，从免费到高端逐层递进：
 | T0 免费 | DeepSeek V4 Flash Free | OpenCode Zen | 免费 | 编排调度、快速任务、搜索探索 |
 | T1 主力 | GLM-4.7 | 智谱 Pro | 1倍 | 写代码主力、日常开发、中等任务 |
 | T2 前端 | Qwen 3.6 Plus | OpenCode Go | Go额度 | 前端/UI/多模态 |
-| T3 高阶 | GLM-5.1 / GLM-5-Turbo | 智谱 Pro | ⚠️高峰3倍/非高峰2倍 | 复杂推理、ultrawork、审查 |
+| T3 高阶 | GLM-5.2 / GLM-5-Turbo | 智谱 Pro | ⚠️高峰3倍/非高峰2倍 | 复杂推理、ultrawork、审查 |
 
 **核心原则**：
 - **免费优先**：编排调度和简单任务一律使用免费的 Flash Free
 - **主力用 GLM-4.7**：日常写代码使用 1倍消耗的 GLM-4.7
 - **成本护栏**：Fallback 链只降不升，错误回退时不会跳到更贵的模型
-- **高峰期控制**：14:00-18:00 避免使用 GLM-5.1/GLM-5-Turbo（3倍消耗）
+- **高峰期控制**：14:00-18:00 避免使用 GLM-5.2/GLM-5-Turbo（3倍消耗）
 - **按需升级**：用户通过 `ulw` 关键词主动要求时才启用高端模型
 - **400 错误重试**：包含在 retry_on_errors 中，用于上下文溢出时自动跨模型回退
 
@@ -104,7 +104,7 @@ bun --version
 
 > OpenCode Zen 提供 **免费** 的 DeepSeek V4 Flash Free，provider 前缀为 `opencode/`（不是 `opencode-zen/`）。无需额外配置，OpenCode 安装即可使用。
 >
-> **智谱 Pro 成本提醒**：GLM-5.1 和 GLM-5-Turbo 在高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍额度（限时福利：6月底前非高峰仅 1 倍）。GLM-4.7 固定 1 倍消耗。日常开发优先使用 GLM-4.7 和 DeepSeek Free。
+> **智谱 Pro 成本提醒**：GLM-5.2 和 GLM-5-Turbo 在高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍额度。GLM-4.7 固定 1 倍消耗。日常开发优先使用 GLM-4.7 和 DeepSeek Free。
 
 **判据**：已确认 OpenCode 版本、bun 版本、用户已有的 Provider 列表。
 
@@ -182,7 +182,7 @@ opencode
    - 直接对话：和原来一样，Sisyphus 会自动编排（免费 DeepSeek Free）
    - 日常写代码：自动使用 GLM-4.7（1倍消耗）
    - 精确规划：按 Tab 切到 Prometheus，或输入 `@plan "需求"` — 使用 GLM-4.7 规划（1倍成本）
-   - 输入 `ulw` 或 `ultrawork`，使用 GLM-5.1 全力编排（⚠️高峰期3倍/非高峰期2倍，建议非高峰使用）
+   - 输入 `ulw` 或 `ultrawork`，使用 GLM-5.2 全力编排（⚠️高峰期3倍/非高峰期2倍，建议非高峰使用）
    - 执行计划：`/start-work`
    - **高峰期（14:00-18:00）避免使用 `ulw`**，优先用 Free 和 GLM-4.7
 

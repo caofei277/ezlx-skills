@@ -2,7 +2,7 @@
 
 > 适用于已集成 oh-my-opencode-slim 插件的 OpenCode 环境
 > 基于长期稳定配置：OpenCode Zen（免费）+ 智谱 Coding Plan（付费）
-> 成本规则：GLM-5.1 高峰期（14:00-18:00）3倍、非高峰期2倍；GLM-4.7 固定1倍；DeepSeek V4 Flash Free 免费
+> 成本规则：GLM-5.2 高峰期（14:00-18:00）3倍、非高峰期2倍；GLM-4.7 固定1倍；DeepSeek V4 Flash Free 免费
 
 ---
 
@@ -89,7 +89,7 @@ Orchestrator → Build → Council → Plan → （循环）
 | **Plan** | Primary | opencode/deepseek-v4-flash-free | 免费 | 先出方案，不写代码 |
 | **Explorer** | Subagent | deepseek-v4-flash-free (low) | 免费 | 代码搜索，文件定位 |
 | **Librarian** | Subagent | deepseek-v4-flash-free (low) | 免费 | 文档查找，Web 搜索 |
-| **Oracle** | Subagent | glm-5.1 (high) | 高 | 深度推理，架构咨询 |
+| **Oracle** | Subagent | glm-5.2 (high) | 高 | 深度推理，架构咨询 |
 | **Designer** | Subagent | deepseek-v4-flash-free (medium) | 免费 | UI/UX 实现 |
 | **Fixer** | Subagent | glm-4.7 (low) | 低 | 范围明确的代码实现 |
 | **Observer** | Subagent | **已禁用** | — | 无免费多模态模型可用 |
@@ -142,7 +142,7 @@ Orchestrator 的模型随 Preset 变化，这是成本控制的核心：
 | `zen-free`（默认） | deepseek-v4-flash-free | **免费** | 日常开发 |
 | `zhipu-std` | glm-4.7 | 低（1倍） | 免费模型委派不准时 |
 | `zhipu-fast` | glm-5-turbo | 中 | 需要更快更好的编排 |
-| `zhipu-full` | glm-5.1 | 高 | 最强编排质量 |
+| `zhipu-full` | glm-5.2 | 高 | 最强编排质量 |
 
 #### 使用示例
 
@@ -233,7 +233,7 @@ Tab → Build → "按刚才的计划实现第一步"
 ```
 你提出问题
    │
-   ├─ alpha (glm-5.1, 智谱) → 从"正确性与边界条件"角度回答
+    ├─ alpha (glm-5.2, 智谱) → 从"正确性与边界条件"角度回答
    ├─ beta  (glm-4.7, 智谱) → 从"性能与权衡"角度回答
    └─ gamma (deepseek-free, Zen) → 从"用户体验与实现"角度回答
    │
@@ -394,7 +394,7 @@ Orchestrator 在以下情况会自动委派给 Librarian：
 
 ### Oracle（深度推理者）
 
-**模型**：`zhipu-coding-plan/glm-5.1` (high) — **高成本（高峰3倍/非高峰2倍）**
+**模型**：`zhipu-coding-plan/glm-5.2` (high) — **高成本（高峰3倍/非高峰2倍）**
 **角色定位**：深度架构推理、复杂调试、代码审查、高风险决策
 
 #### 什么时候用 Oracle
@@ -428,7 +428,7 @@ Orchestrator 在以下情况会自动委派给 Oracle：
 
 #### 成本提醒
 
-Oracle 使用 glm-5.1 (high) 是成本最高的 Subagent。高峰期（14:00-18:00）消耗 3 倍额度。
+Oracle 使用 glm-5.2 (high) 是成本最高的 Subagent。高峰期（14:00-18:00）消耗 3 倍额度。
 - 不要用 Oracle 做简单的事情（"加个字段"、"改个变量名"）
 - 复杂的架构决策、反复出现的 Bug、代码审查才值得用 Oracle
 
@@ -669,7 +669,7 @@ Orchestrator 在任务完成前的验证阶段也会使用 Subagent：
 
 | | zen-free（默认） | zhipu-std | zhipu-fast | zhipu-full |
 |--|-----------------|-----------|------------|------------|
-| **Orchestrator** | deepseek-free | glm-4.7 | glm-5-turbo | glm-5.1 |
+| **Orchestrator** | deepseek-free | glm-4.7 | glm-5-turbo | glm-5.2 |
 | **Orchestrator 成本** | **免费** | 低（1倍） | 中 | 高（3倍/2倍） |
 | **其他 Agent** | 全部相同 | 全部相同 | 全部相同 | 全部相同 |
 
@@ -677,10 +677,10 @@ Orchestrator 在任务完成前的验证阶段也会使用 Subagent：
 
 | Agent | zen-free | zhipu-std | zhipu-fast | zhipu-full |
 |-------|----------|-----------|------------|------------|
-| Orchestrator | `opencode/deepseek-v4-flash-free` | `zhipu/glm-4.7` | `zhipu/glm-5-turbo` | `zhipu/glm-5.1` |
+| Orchestrator | `opencode/deepseek-v4-flash-free` | `zhipu/glm-4.7` | `zhipu/glm-5-turbo` | `zhipu/glm-5.2` |
 | Explorer | `opencode/deepseek-v4-flash-free` (low) | 同左 | 同左 | 同左 |
 | Librarian | `opencode/deepseek-v4-flash-free` (low) | 同左 | 同左 | 同左 |
-| Oracle | `zhipu/glm-5.1` (high) | 同左 | 同左 | 同左 |
+| Oracle | `zhipu/glm-5.2` (high) | 同左 | 同左 | 同左 |
 | Designer | `opencode/deepseek-v4-flash-free` (medium) | 同左 | 同左 | 同左 |
 | Fixer | `zhipu/glm-4.7` (low) | 同左 | 同左 | 同左 |
 | Council | `zhipu/glm-5-turbo` (high) | 同左 | 同左 | 同左 |
@@ -731,7 +731,7 @@ Council 是一个多模型共识系统：
 
 | 议员 | 模型 | 平台 | 视角 |
 |------|------|------|------|
-| alpha | `zhipu-coding-plan/glm-5.1` | 智谱 | "Focus on correctness and edge cases." |
+| alpha | `zhipu-coding-plan/glm-5.2` | 智谱 | "Focus on correctness and edge cases." |
 | beta | `zhipu-coding-plan/glm-4.7` | 智谱 | "Focus on performance and trade-offs." |
 | gamma | `opencode/deepseek-v4-flash-free` | Zen | "Focus on user experience and implementation." |
 
@@ -767,7 +767,7 @@ Council 响应包含：
 ### 成本提醒
 
 - 每次调用 Council = 3 个模型同时运行
-- alpha 用 glm-5.1（高成本），beta 用 glm-4.7（低成本），gamma 用 deepseek-free（免费）
+- alpha 用 glm-5.2（高成本），beta 用 glm-4.7（低成本），gamma 用 deepseek-free（免费）
 - **综合成本约等于 1 次高阶调用**，但获得 3 个视角
 - Orchestrator 不会自动调用 Council，必须手动触发
 
@@ -912,7 +912,7 @@ Orchestrator 自动拆解并委派：
 @oracle 这个空指针异常反复出现，帮我深入分析根本原因
 ```
 
-Oracle 会用 glm-5.1 (high) 深度分析。
+Oracle 会用 glm-5.2 (high) 深度分析。
 
 ### 场景 4：技术选型纠结
 
@@ -976,7 +976,7 @@ Tab → Build → "在 User 类型里加个 phone 字段"
 | **T0 免费** | DeepSeek V4 Flash Free | Zen | **免费** | Explorer, Librarian, Designer, Orchestrator（默认） |
 | **T1 低成本** | GLM-4.7 | 智谱 | 1倍 | Fixer, Orchestrator（zhipu-std） |
 | **T2 中等** | GLM-5-Turbo | 智谱 | 中 | Council, Orchestrator（zhipu-fast） |
-| **T3 高阶** | GLM-5.1 | 智谱 | ⚠️高峰3倍/非高峰2倍 | Oracle, Orchestrator（zhipu-full） |
+| **T3 高阶** | GLM-5.2 | 智谱 | ⚠️高峰3倍/非高峰2倍 | Oracle, Orchestrator（zhipu-full） |
 
 ### 成本分配原则
 
@@ -989,7 +989,7 @@ Tab → Build → "在 User 类型里加个 phone 字段"
 
 ### 高峰期成本提醒
 
-| 时间段 | GLM-5.1 成本 | 建议 |
+| 时间段 | GLM-5.2 成本 | 建议 |
 |--------|-------------|------|
 | **14:00-18:00（高峰）** | 3倍消耗 | 避免大量 Oracle 任务，Orchestrator 用 zen-free |
 | **其他时间（非高峰）** | 2倍消耗 | 可适当使用 Oracle |
@@ -1034,7 +1034,7 @@ bunx oh-my-opencode-slim@latest doctor
 ```
 /preset zhipu-std    # 免费模型 → glm-4.7
 /preset zhipu-fast   # glm-4.7 → glm-5-turbo
-/preset zhipu-full   # glm-5-turbo → glm-5.1
+/preset zhipu-full   # glm-5-turbo → glm-5.2
 ```
 
 ### Q: 模型报错？
@@ -1107,7 +1107,7 @@ bunx oh-my-opencode-slim@latest install --no-tui --skills=yes
 | Explorer | opencode/deepseek-v4-flash-free (low) | **免费** | Zen |
 | Librarian | opencode/deepseek-v4-flash-free (low) | **免费** | Zen |
 | Designer | opencode/deepseek-v4-flash-free (medium) | **免费** | Zen |
-| Oracle | zhipu-coding-plan/glm-5.1 (high) | 高（3倍/2倍） | 智谱 |
+| Oracle | zhipu-coding-plan/glm-5.2 (high) | 高（3倍/2倍） | 智谱 |
 | Fixer | zhipu-coding-plan/glm-4.7 (low) | 低（1倍） | 智谱 |
 | Observer | 已禁用 | — | — |
 
@@ -1115,7 +1115,7 @@ bunx oh-my-opencode-slim@latest install --no-tui --skills=yes
 
 | 议员 | 模型 | 平台 | 视角 |
 |------|------|------|------|
-| alpha | zhipu-coding-plan/glm-5.1 | 智谱 | 正确性与边界条件 |
+| alpha | zhipu-coding-plan/glm-5.2 | 智谱 | 正确性与边界条件 |
 | beta | zhipu-coding-plan/glm-4.7 | 智谱 | 性能与权衡 |
 | gamma | opencode/deepseek-v4-flash-free | Zen | 用户体验与实现 |
 

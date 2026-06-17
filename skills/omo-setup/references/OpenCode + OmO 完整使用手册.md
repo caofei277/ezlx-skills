@@ -2,7 +2,7 @@
 
 > 适用于已集成 oh-my-openagent 插件的 OpenCode 环境
 > 基于三平台配置：OpenCode Zen + OpenCode Go + 智谱 Pro
-> 成本规则：GLM-5.1/GLM-5-Turbo 高峰期（14:00-18:00）3倍、非高峰期2倍（6月底前1倍）；GLM-4.7 固定1倍；DeepSeek Free 免费
+> 成本规则：GLM-5.2/GLM-5-Turbo 高峰期（14:00-18:00）3倍、非高峰期2倍；GLM-4.7 固定1倍；DeepSeek Free 免费
 
 ---
 
@@ -85,7 +85,7 @@ Sisyphus → Hephaestus → Prometheus → Atlas → （循环回 Sisyphus）
 
 **你的模型分配**：
 - 普通模式：`OpenCode DeepSeek V4 Flash Free`（免费、百万上下文）
-- ultrawork 模式：`GLM-5.1`（智谱，最强推理）
+- ultrawork 模式：`GLM-5.2`（智谱，最强推理）
 - 额度用完自动切：Go DeepSeek V4 Flash → 智谱 GLM-4.7
 
 **使用方式**：
@@ -206,7 +206,7 @@ Ask @explore for the policy on this feature
 
 ### 模式二：Ultrawork 全自动模式（⚠️ 高成本，谨慎使用）
 
-> ⚠️ **高峰期（14:00-18:00）GLM-5.1 消耗 3倍额度！非高峰期2倍（6月底前1倍）。建议非高峰期使用。**
+> ⚠️ **高峰期（14:00-18:00）GLM-5.2 消耗 3倍额度！非高峰期2倍。建议非高峰期使用。**
 
 **适用**：复杂任务，让 Agent 自己探索搞定。
 
@@ -228,7 +228,7 @@ ulw 修复所有失败的测试用例
   │
   ├─ IntentGate 分析你的真实意图（实现？修复？重构？调研？）
   │
-  ├─ Sisyphus 切换到 ultrawork 模式（使用 GLM-5.1，⚠️ 高成本）
+   ├─ Sisyphus 切换到 ultrawork 模式（使用 GLM-5.2，⚠️ 高成本）
   │
   ├─ 自动探索代码库（调用 Explore Agent，免费 DeepSeek）
   │
@@ -240,7 +240,7 @@ ulw 修复所有失败的测试用例
   │   ├─ 前端任务 → Qwen 3.6 Plus（Go，Category: visual-engineering）
   │   ├─ 逻辑/写代码任务 → GLM-4.7（智谱，Category: unspecified-low/deep）
   │   ├─ 快速修改 → DeepSeek Free（免费，Category: quick）
-  │   └─ 复杂推理 → GLM-5.1（智谱，Category: ultrabrain）
+   │   └─ 复杂推理 → GLM-5.2（智谱，Category: ultrabrain）
   │
   ├─ 每个任务完成后自动验证
   │
@@ -274,7 +274,7 @@ ulw 修复所有失败的测试用例
   │
   ├─ 单文件小改动 → 直接对话（免费）
   │
-  ├─ 中等复杂度 → ulw（⚠️ 高峰期3倍，非高峰期2倍/6月底前1倍）
+  ├─ 中等复杂度 → ulw（⚠️ 高峰期3倍，非高峰期2倍）
   │
   ├─ 复杂但懒得写详细需求 → ulw（⚠️ 高峰期慎用）
   │
@@ -302,7 +302,7 @@ Sisyphus 接收你的需求
   │
   ├─ 3. 委派子任务
   │     ├─ task(category="visual-engineering") → Qwen 3.6 Plus 做前端
-  │     ├─ task(category="ultrabrain") → GLM-5.1 做逻辑
+  │     ├─ task(category="ultrabrain") → GLM-5.2 做逻辑
   │     ├─ task(category="quick") → OpenCode DeepSeek V4 Flash Free 做小活
   │     ├─ call_omo_agent(subagent_type="oracle") → 咨询架构
   │     ├─ call_omo_agent(subagent_type="explore") → 搜索代码
@@ -336,7 +336,7 @@ Hephaestus 和 Sisyphus 的区别：
 | 对比项 | Sisyphus | Hephaestus |
 |--------|----------|------------|
 | 工作方式 | 拆解任务，委派给子 Agent | 自己一个人从头干到尾 |
-| 模型 | DeepSeek Free / GLM-5.1(ultrawork) | GLM-5.1（智谱，⚠️高成本） |
+| 模型 | DeepSeek Free / GLM-5.2(ultrawork) | GLM-5.2（智谱，⚠️高成本） |
 | 适合 | 需要多 Agent 协作的任务 | 需要深度推理的单一任务 |
 | 你需要做的 | 描述需求 | 描述目标（不要教它怎么做） |
 
@@ -360,7 +360,7 @@ Tab 切到 Hephaestus，然后输入：
 | Category | 用途 | 主模型 | 成本 | 额度用完切 |
 |----------|------|--------|------|-----------|
 | `visual-engineering` | 前端、UI、设计、样式 | Go Qwen 3.6 Plus | Go额度 | 智谱 GLM-4.7 → DeepSeek Free |
-| `ultrabrain` | 深度逻辑、架构决策 | 智谱 GLM-5.1 | ⚠️3倍/2倍 | 智谱 GLM-5-Turbo → 智谱 GLM-4.7 |
+| `ultrabrain` | 深度逻辑、架构决策 | 智谱 GLM-5.2 | ⚠️3倍/2倍 | 智谱 GLM-5-Turbo → 智谱 GLM-4.7 |
 | `deep` | 自主深度问题解决 | 智谱 GLM-4.7 | 1倍 | DeepSeek Free |
 | `artistry` | 创意、艺术任务 | Go Qwen 3.6 Plus | Go额度 | 智谱 GLM-4.7 → DeepSeek Free |
 | `quick` | 小改动、改错字、单文件 | DeepSeek V4 Flash Free | 免费 | Go DeepSeek Flash |
@@ -403,8 +403,8 @@ Sisyphus 要用 DeepSeek Free
 ```
 
 ```
-Hephaestus 要用 GLM-5.1（⚠️高成本）
-  → 智谱 GLM-5.1（正常使用）
+Hephaestus 要用 GLM-5.2（⚠️高成本）
+  → 智谱 GLM-5.2（正常使用）
   → 智谱额度用完（429）
   → 自动切 智谱 GLM-5-Turbo（智谱内部降级）
   → 也用完 → 智谱 GLM-4.7（继续降级）
@@ -414,7 +414,7 @@ Hephaestus 要用 GLM-5.1（⚠️高成本）
 
 切换时 TUI 会弹出一个 toast 通知，类似：
 ```
-⚠ Runtime fallback: opencode-go/glm-5.1 → zhipu-coding-plan/glm-5.1
+⚠ Runtime fallback: opencode-go/glm-5.2 → zhipu-coding-plan/glm-5.2
 ```
 
 ### 配置位置
@@ -694,20 +694,20 @@ DO NOT respond until all todos are marked completed.
 编辑 `oh-my-openagent.json`：
 
 ```json
-{
-  "agents": {
-    "sisyphus": { "model": "opencode-go/glm-5.1" }
+  {
+    "agents": {
+      "sisyphus": { "model": "opencode-go/glm-5.2" }
+    }
   }
-}
 ```
 
 #### 添加自定义 Category
 
 ```json
-{
-  "categories": {
-    "rust-expert": {
-      "model": "opencode-go/glm-5.1",
+  {
+    "categories": {
+      "rust-expert": {
+        "model": "opencode-go/glm-5.2",
       "description": "Rust 专家",
       "prompt_append": "Focus on safe Rust patterns and idiomatic code."
     }
@@ -847,12 +847,12 @@ Oracle Agent 会以只读模式分析你的架构并给出建议。
 ### 你的模型分级（三平台版）
 
 > 三平台：OpenCode Zen（免费）+ OpenCode Go（付费）+ 智谱 Pro（年费）
-> 成本规则：GLM-5.1/GLM-5-Turbo 高峰期（14:00-18:00）3倍、非高峰期2倍（6月底前1倍）；GLM-4.7 固定1倍
+> 成本规则：GLM-5.2/GLM-5-Turbo 高峰期（14:00-18:00）3倍、非高峰期2倍；GLM-4.7 固定1倍
 
 | 档位 | 模型 | 平台 | 成本 | 定位 |
 |------|------|------|------|------|
-| **T1 最强** | GLM-5.1 | 智谱 | ⚠️高峰3倍/非高峰2倍（6月底前1倍） | 最复杂任务，ultrawork |
-| **T1.5** | GLM-5-Turbo | 智谱 | ⚠️高峰3倍/非高峰2倍（6月底前1倍） | 审查、规划、高难度 |
+| **T1 最强** | GLM-5.2 | 智谱 | ⚠️高峰3倍/非高峰2倍 | 最复杂任务，ultrawork |
+| **T1.5** | GLM-5-Turbo | 智谱 | ⚠️高峰3倍/非高峰2倍 | 审查、规划、高难度 |
 | **T2 主力** | GLM-4.7 | 智谱 | 1倍 | **写代码主力**，日常开发 |
 | **T2.5** | Qwen 3.6 Plus | Go | Go额度 | 前端/UI/多模态 |
 | **T3 降级** | DeepSeek V4 Flash | Go | Go额度 | Free 的付费备选 |
@@ -860,11 +860,10 @@ Oracle Agent 会以只读模式分析你的架构并给出建议。
 
 ### ⚠️ 高峰期成本提醒
 
-| 时间段 | GLM-5.1/GLM-5-Turbo 成本 | 建议 |
+| 时间段 | GLM-5.2/GLM-5-Turbo 成本 | 建议 |
 |--------|-------------------------|------|
 | **14:00-18:00（高峰）** | 3倍消耗 | 避免用 `ulw`，优先 GLM-4.7 和 Free |
-| **其他时间（非高峰）** | 2倍消耗（6月底前1倍） | 可适当使用 `ulw` |
-| **6月底后 非高峰** | 2倍消耗 | 谨慎使用高阶模型 |
+| **其他时间（非高峰）** | 2倍消耗 | 可适当使用 `ulw` |
 
 ### 重要：Fallback 是平台降级，不是难度升级
 
@@ -876,9 +875,9 @@ Oracle Agent 会以只读模式分析你的架构并给出建议。
 用户提需求 → Sisyphus (DeepSeek Free，零成本)
   ├─ 简单 CRUD → quick → DeepSeek Free（免费）
   ├─ 前端/UI → visual-engineering → Go Qwen 3.6 Plus
-  ├─ 写代码 → unspecified-low → 智谱 GLM-4.7（1倍，主力）
-  ├─ 复杂架构 → deep → 智谱 GLM-4.7（1倍）
-  └─ 超难问题 → ultrabrain → 智谱 GLM-5.1（⚠️高成本，终极武器）
+   ├─ 写代码 → unspecified-low → 智谱 GLM-4.7（1倍，主力）
+   ├─ 复杂架构 → deep → 智谱 GLM-4.7（1倍）
+   └─ 超难问题 → ultrabrain → 智谱 GLM-5.2（⚠️高成本，终极武器）
 ```
 
 ### 手动升级模型的方法
@@ -894,7 +893,7 @@ ulw 这个问题太复杂了，用最强模式帮我解决
 ```
 
 效果：
-- 切换到 **GLM-5.1**（智谱，⚠️高峰期3倍/非高峰期2倍）
+- 切换到 **GLM-5.2**（智谱，⚠️高峰期3倍/非高峰期2倍）
 - 激活 **ultrawork 编排协议**（并行 Agent、深度探索、自动验证循环）
 
 #### 方法 2：`@plan` 重新规划
@@ -912,7 +911,7 @@ ulw 这个问题太复杂了，用最强模式帮我解决
 | Tab 顺序 | Agent | 模型 | 成本 |
 |-----------|-------|------|------|
 | 1 | Sisyphus | DeepSeek Free | 免费 |
-| 2 | **Hephaestus** | **GLM-5.1** | ⚠️高峰3倍 |
+| 2 | **Hephaestus** | **GLM-5.2** | ⚠️高峰3倍 |
 | 3 | Prometheus | GLM-4.7 | 1倍 |
 | 4 | Atlas | GLM-4.7 | 1倍 |
 
@@ -931,7 +930,7 @@ ulw 这个问题太复杂了，用最强模式帮我解决
 
 | 关键词 | 触发方式 | 效果 |
 |--------|---------|------|
-| `ulw` / `ultrawork` | 消息中包含即可 | GLM-5.1 + 全力编排 |
+| `ulw` / `ultrawork` | 消息中包含即可 | GLM-5.2 + 全力编排 |
 | `@plan` | `@plan "需求"` | Qwen 3.6 Plus 重新规划 |
 | `search` | 消息中包含 | 激活搜索模式 |
 | `analyze` | 消息中包含 | 激活深度分析模式 |
@@ -950,7 +949,7 @@ ulw 这个问题太复杂了，用最强模式帮我解决
 | 写代码搞了 2 轮不行 | 说"用 deep 重新分析" | 1倍（GLM-4.7） |
 | 复杂架构问题 | 直接说"ulw 帮我设计" | ⚠️高峰3倍/非高峰2倍 |
 | 任何任务反复搞不定 | 输入 `ulw` + 描述 | ⚠️高峰3倍/非高峰2倍 |
-| 需要从头规划 | `@plan "重新规划"` | ⚠️GLM-5.1（高成本） |
+| 需要从头规划 | `@plan "重新规划"` | ⚠️GLM-5.2（高成本） |
 
 ### 低成本高质量编码策略：GLM-4.7 写代码 + GLM-5-Turbo 审查
 
@@ -960,7 +959,7 @@ ulw 这个问题太复杂了，用最强模式帮我解决
 
 | 方案 | 写代码 | 审查 | 总成本 |
 |------|--------|------|--------|
-| 全程 GLM-5.1 | ⚠️高峰3倍 | - | 很高 |
+| 全程 GLM-5.2 | ⚠️高峰3倍 | - | 很高 |
 | **GLM-4.7 写 + GLM-5-Turbo 审** | 1倍 | ⚠️非高峰2倍 | **省 40-60%** |
 | 全程 DeepSeek Free | 免费 | 无 | 最低（免费） |
 
@@ -1198,15 +1197,15 @@ opencode --version
 ## 附录：你的完整模型分配表
 
 > 基于三平台配置：OpenCode Zen（免费）+ OpenCode Go（付费）+ 智谱 Pro（年费）
-> 成本规则：GLM-5.1/GLM-5-Turbo 高峰期（14:00-18:00）3倍、非高峰期2倍（6月底前1倍）；GLM-4.7 固定1倍；DeepSeek Free 免费
+> 成本规则：GLM-5.2/GLM-5-Turbo 高峰期（14:00-18:00）3倍、非高峰期2倍；GLM-4.7 固定1倍；DeepSeek Free 免费
 
 ### 按 Agent
 
 | Agent | 主模型 | 成本 | 平台 | 回退链 |
 |-------|--------|------|------|--------|
 | Sisyphus（普通） | DeepSeek V4 Flash Free | 免费 | Zen | Go DeepSeek Flash → 智谱 GLM-4.7 |
-| Sisyphus（ultrawork） | GLM-5.1 | 3倍/2倍 | 智谱 | 智谱 GLM-5-Turbo → 智谱 GLM-4.7 |
-| Hephaestus | GLM-5.1 | 3倍/2倍 | 智谱 | 智谱 GLM-5-Turbo → 智谱 GLM-4.7 |
+| Sisyphus（ultrawork） | GLM-5.2 | 3倍/2倍 | 智谱 | 智谱 GLM-5-Turbo → 智谱 GLM-4.7 |
+| Hephaestus | GLM-5.2 | 3倍/2倍 | 智谱 | 智谱 GLM-5-Turbo → 智谱 GLM-4.7 |
 | Prometheus | GLM-4.7 | 1倍 | 智谱 | DeepSeek Free | 默认；复杂任务可 `/models` 切换 GLM-5-Turbo |
 | Atlas | GLM-4.7 | 1倍 | 智谱 | DeepSeek Free |
 | Momus | GLM-5-Turbo | 3倍/2倍 | 智谱 | 智谱 GLM-4.7 → DeepSeek Free |
@@ -1222,7 +1221,7 @@ opencode --version
 | Category | 主模型 | 成本 | 平台 | 回退 |
 |----------|--------|------|------|------|
 | visual-engineering | Qwen 3.6 Plus | Go额度 | Go | 智谱 GLM-4.7 → DeepSeek Free |
-| ultrabrain | GLM-5.1 | 3倍/2倍 | 智谱 | 智谱 GLM-5-Turbo → 智谱 GLM-4.7 |
+| ultrabrain | GLM-5.2 | 3倍/2倍 | 智谱 | 智谱 GLM-5-Turbo → 智谱 GLM-4.7 |
 | deep | GLM-4.7 | 1倍 | 智谱 | DeepSeek Free |
 | artistry | Qwen 3.6 Plus | Go额度 | Go | 智谱 GLM-4.7 → DeepSeek Free |
 | quick | DeepSeek V4 Flash Free | 免费 | Zen | Go DeepSeek Flash |
@@ -1234,6 +1233,5 @@ opencode --version
 
 | 时间段 | 策略 |
 |--------|------|
-| **高峰期 14:00-18:00** | GLM-5.1/GLM-5-Turbo 消耗 3倍额度，避免使用 `ulw`，优先用 GLM-4.7 和 DeepSeek Free |
-| **非高峰期 其他时间** | GLM-5.1/GLM-5-Turbo 消耗 2倍额度（6月底前1倍），可适当使用 `ulw` |
-| **6月底后 非高峰** | GLM-5.1/GLM-5-Turbo 消耗 2倍，谨慎使用 |
+| **高峰期 14:00-18:00** | GLM-5.2/GLM-5-Turbo 消耗 3倍额度，避免使用 `ulw`，优先用 GLM-4.7 和 DeepSeek Free |
+| **非高峰期 其他时间** | GLM-5.2/GLM-5-Turbo 消耗 2倍额度，可适当使用 `ulw` |

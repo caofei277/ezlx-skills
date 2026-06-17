@@ -38,8 +38,8 @@ Install and configure [OpenCode](https://opencode.ai) on Windows / macOS / Linux
 
 | Provider | SDK | Models |
 |----------|-----|--------|
-| OpenCode Go | Built-in (auto-routing) | GLM-5.1, DeepSeek V4 Flash/Pro, Qwen3.6 Plus, Kimi K2.6 and more (12 total) |
-| Zhipu Coding Plan | @ai-sdk/openai-compatible | GLM-5, GLM-5 Turbo, GLM-4.7, GLM-5.1 |
+| OpenCode Go | Built-in (auto-routing) | GLM-5.2, DeepSeek V4 Flash/Pro, Qwen3.6 Plus, Kimi K2.6 and more (12 total) |
+| Zhipu Coding Plan | @ai-sdk/openai-compatible | GLM-5.2, GLM-5 Turbo, GLM-4.7, GLM-4.5-Air |
 | Alibaba Bailian Coding Plan | @ai-sdk/anthropic | Qwen3.5 Plus, Qwen3.6 Plus, GLM-5, Kimi K2.5 and more (9 total) |
 
 ### opencode-update

@@ -42,7 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.
 | 规划 / 前端 / UI / 写作 | Qwen 3.6 Plus | 百炼 / OpenCode Go | 中等 |
 | 架构咨询 / 复杂自主 | GLM-5 | 百炼 / OpenCode Go | 中等 |
 | 审查评估 | GLM-5 Turbo | 智谱 | 中等 |
-| 复杂推理 (ultrawork) | GLM-5.1 | 智谱 / OpenCode Go | 高 |
+| 复杂推理 (ultrawork) | GLM-5.2 | 智谱 / OpenCode Go | 高 |
 
 ### opencode-cross-platform-setup
 
@@ -61,8 +61,8 @@ curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.
 | Provider | SDK | 模型 |
 |----------|-----|------|
 | OpenCode Zen | 内置（免费） | DeepSeek V4 Flash Free（免费） |
-| OpenCode Go | 内置（自动路由） | GLM-5.1, DeepSeek V4 Flash/Pro, Qwen3.6 Plus, Kimi K2.6 等 12 个 |
-| 智谱 Coding Plan | @ai-sdk/openai-compatible | GLM-5, GLM-5 Turbo, GLM-4.7, GLM-5.1 |
+| OpenCode Go | 内置（自动路由） | GLM-5.2, DeepSeek V4 Flash/Pro, Qwen3.6 Plus, Kimi K2.6 等 12 个 |
+| 智谱 Coding Plan | @ai-sdk/openai-compatible | GLM-5.2, GLM-5 Turbo, GLM-4.7, GLM-4.5-Air |
 | 阿里云百炼 Coding Plan | @ai-sdk/anthropic | Qwen3.5 Plus, Qwen3.6 Plus, GLM-5, Kimi K2.5 等 9 个 |
 
 ### opencode-update

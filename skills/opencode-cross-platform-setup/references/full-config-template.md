@@ -4,7 +4,7 @@
 
 > **关于 OpenCode Zen**：OpenCode Zen 提供免费的 DeepSeek V4 Flash Free，无需配置 Provider。在 OmO 中使用 `opencode/deepseek-v4-flash-free` 引用。
 
-> **智谱 Pro 成本提醒**：GLM-5.1 和 GLM-5-Turbo 高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍（限时福利：6月底前非高峰仅 1 倍）。GLM-4.7 固定 1 倍消耗。日常开发优先使用 GLM-4.7 和 DeepSeek Free。
+> **智谱 Pro 成本提醒**：GLM-5.2 和 GLM-5-Turbo 高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍。GLM-4.7 固定 1 倍消耗。日常开发优先使用 GLM-4.7 和 DeepSeek Free。
 
 同时配置智谱和阿里云百炼两个 Provider，并包含 MCP Puppeteer。
 
@@ -91,12 +91,12 @@
          "apiKey": "{env:ZHIPU_API_KEY}"
        },
         "models": {
-          "glm-5.2": {
-            "name": "GLM-5.2",
-            "modalities": { "input": ["text"], "output": ["text"] },
-            "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
-            "limit": { "context": 200000, "output": 128000 }
-          },
+           "glm-5.2": {
+             "name": "GLM-5.2",
+             "modalities": { "input": ["text"], "output": ["text"] },
+             "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
+             "limit": { "context": 1000000, "output": 131072 }
+           },
           "glm-5-turbo": {
             "name": "GLM-5 Turbo",
             "modalities": { "input": ["text"], "output": ["text"] },
@@ -185,9 +185,9 @@
           "name": "deepseek-v4-pro",
           "limit": { "context": 1024000, "output": 4096 }
         },
-        "glm-5.1": {
-          "name": "glm-5.1",
-          "limit": { "context": 200000, "output": 4096 },
+        "glm-5.2": {
+          "name": "glm-5.2",
+          "limit": { "context": 1000000, "output": 131072 },
           "modalities": { "input": ["text"], "output": ["text"] }
         },
         "minimax-m2.7": {
@@ -239,7 +239,7 @@
 | `volcengine-plan/doubao-seed-2.0-lite` | 火山方舟 豆包 Seed 2.0 Lite |
 | `volcengine-plan/deepseek-v4-flash` | 火山方舟 DeepSeek V4 Flash（1M 上下文） |
 | `volcengine-plan/deepseek-v4-pro` | 火山方舟 DeepSeek V4 Pro（1M 上下文） |
-| `volcengine-plan/glm-5.1` | 火山方舟 GLM-5.1 |
+| `volcengine-plan/glm-5.2` | 火山方舟 GLM-5.2 |
 | `volcengine-plan/minimax-m2.7` | 火山方舟 MiniMax M2.7 |
 | `volcengine-plan/minimax-m3` | 火山方舟 MiniMax M3（512K 上下文） |
 | `volcengine-plan/kimi-k2.6` | 火山方舟 Kimi K2.6 |

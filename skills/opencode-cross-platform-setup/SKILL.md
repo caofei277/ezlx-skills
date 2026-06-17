@@ -17,7 +17,7 @@ compatibility:
 - 用户要求"安装 OpenCode""配置 OpenCode""初始化开发环境"中的 OpenCode 部分
 - 需要为当前机器新增或变更 Coding Plan Provider（OpenCode Zen / OpenCode Go / 智谱 Pro / 阿里云百炼）
 - 需要修复 OpenCode 配置文件缺失或损坏的问题
-- 用户需要了解智谱 Pro 的高阶模型成本规则（GLM-5.1/GLM-5-Turbo 高峰期3倍消耗）
+- 用户需要了解智谱 Pro 的高阶模型成本规则（GLM-5.2/GLM-5-Turbo 高峰期3倍消耗）
 
 ## 不适用
 
@@ -114,7 +114,7 @@ opencode --version
 
 **OpenCode Go 优势：**
 - **智能路由**：根据模型自动选择正确 API 端点（MiniMax→Anthropic、Qwen→Alibaba、其他→OpenAI）
-- **12个模型**：包括 GLM-5.1、Kimi K2.6、Qwen3.6 Plus、DeepSeek V4 Flash/Pro 等
+- **12个模型**：包括 GLM-5.2、Kimi K2.6、Qwen3.6 Plus、DeepSeek V4 Flash/Pro 等
 - **统一 API Key**：一个 Key 访问所有模型
 - **官方支持**：由 OpenCode 团队维护
 
@@ -203,7 +203,7 @@ opencode
 | OpenCode Go | 内置（自动路由） | 自动选择 | 自动选择 | `/connect` 交互输入 | https://opencode.ai/auth |
 | 智谱 Coding Plan | `zhipu-coding-plan` | `@ai-sdk/openai-compatible` | `https://open.bigmodel.cn/api/coding/paas/v4` | `ZHIPU_API_KEY` | https://open.bigmodel.cn → Coding Plan 套餐 |
 
-> **智谱 Pro 成本提醒**：GLM-5.2 和 GLM-5-Turbo 作为高阶模型，高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍额度。限时福利：6月底前非高峰期仅 1 倍。日常开发优先使用 GLM-4.7（1倍消耗）、GLM-4.5-Air（更低成本）和 DeepSeek Free（免费）。
+> **智谱 Pro 成本提醒**：GLM-5.2 和 GLM-5-Turbo 作为高阶模型，高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍额度。日常开发优先使用 GLM-4.7（1倍消耗）、GLM-4.5-Air（更低成本）和 DeepSeek Free（免费）。
 | 阿里云百炼 Coding Plan | `bailian-coding-plan` | `@ai-sdk/anthropic` | `https://coding.dashscope.aliyuncs.com/apps/anthropic/v1` | `DASHSCOPE_API_KEY` | https://bailian.console.aliyun.com |
 | 火山方舟 Coding Plan | `volcengine-plan` | `@ai-sdk/openai-compatible` | `https://ark.cn-beijing.volces.com/api/coding/v3` | `ARK_API_KEY` | https://console.volcengine.com/coding_plan |
 

@@ -14,9 +14,11 @@
 | T1 (主力) | GLM-4.7 | 智谱 Pro | 1倍 | 写代码主力、日常开发 |
 | T1.5 (前端) | Qwen 3.6 Plus | OpenCode Go | Go额度 | 前端/UI/多模态 |
 | T2 (降级) | DeepSeek V4 Flash | OpenCode Go | Go额度 | Free的付费备选 |
-| T3 (高阶) | GLM-5.1 / GLM-5-Turbo | 智谱 Pro | ⚠️高峰3倍/非高峰2倍 | 复杂推理、ultrawork |
+| T3 (高阶) | GLM-5.2 / GLM-5-Turbo | 智谱 Pro | ⚠️高峰3倍/非高峰2倍 | 复杂推理、ultrawork |
 
-> **智谱 Pro 成本提醒**：GLM-5.1 和 GLM-5-Turbo 高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍（限时福利：6月底前非高峰仅 1 倍）。GLM-4.7 固定 1 倍消耗。日常开发优先使用 GLM-4.7 和 DeepSeek Free。
+> **智谱 Pro 成本提醒**：GLM-5.2 和 GLM-5-Turbo 高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍。GLM-4.7 固定 1 倍消耗。日常开发优先使用 GLM-4.7 和 DeepSeek Free。
+>
+> **GLM-5.2 说明**：1M 上下文，128K 最大输出（配置中使用 131072）。Provider 文档可能滞后，使用当前可用的提供商模型 ID。
 
 ### 四平台版（Zen + Go + 智谱 + 百炼）
 
@@ -25,7 +27,7 @@
 | T0 (免费) | DeepSeek V4 Flash Free | OpenCode Zen | 免费 | 编排调度、快速任务、搜索 |
 | T1 (低) | DeepSeek V4 Flash/Pro | OpenCode Go | 低 | 中等任务、备选 |
 | T2 (中) | GLM-5, Qwen 3.6 Plus, GLM-5 Turbo | 百炼/智谱 | 中等 | 规划、审查、前端/UI |
-| T3 (高) | GLM-5.1 | 智谱/OpenCode Go | 高 | 复杂推理、深度自主 |
+| T3 (高) | GLM-5.2 | 智谱/OpenCode Go | 高 | 复杂推理、深度自主 |
 
 **关键原则**：Fallback 链必须以同级或更低级模型结尾，绝不升级回退（成本护栏）。
 
@@ -33,7 +35,7 @@
 
 ## 模板零：三平台版（OpenCode Zen + OpenCode Go + 智谱 Pro）
 
-> 适合只有 OpenCode Go + 智谱 Pro 的用户。**推荐配置：GLM-4.7 为主力写代码模型，GLM-5.1 仅用于 ultrawork，日常用 DeepSeek Free 省额度。**
+> 适合只有 OpenCode Go + 智谱 Pro 的用户。**推荐配置：GLM-4.7 为主力写代码模型，GLM-5.2 仅用于 ultrawork，日常用 DeepSeek Free 省额度。**
 
 ```jsonc
 {
@@ -41,19 +43,19 @@
 
   // ===== Agents 配置 =====
   "agents": {
-    // 主编排：免费 Flash，ultrawork 用 GLM-5.1（⚠️高峰3倍）
+    // 主编排：免费 Flash，ultrawork 用 OpenCode Go GLM-5.2
     "sisyphus": {
       "model": "opencode/deepseek-v4-flash-free",
-      "ultrawork": { "model": "zhipu-coding-plan/glm-5.1" },
+      "ultrawork": { "model": "opencode-go/glm-5.2" },
       "fallback_models": [
         "opencode-go/deepseek-v4-flash",
         "zhipu-coding-plan/glm-4.7"
       ]
     },
 
-    // 深度自主工作：GLM-5.1（⚠️高峰3倍，非高峰使用）
+    // 深度自主工作：GLM-5.2（⚠️高峰3倍，非高峰使用）
     "hephaestus": {
-      "model": "zhipu-coding-plan/glm-5.1",
+      "model": "zhipu-coding-plan/glm-5.2",
       "fallback_models": [
         "zhipu-coding-plan/glm-5-turbo",
         "zhipu-coding-plan/glm-4.7"
@@ -133,9 +135,9 @@
 
   // ===== Categories 配置 =====
   "categories": {
-    // 复杂推理：GLM-5.1（⚠️高峰3倍）
+    // 复杂推理：GLM-5.2（⚠️高峰3倍）
     "ultrabrain": {
-      "model": "zhipu-coding-plan/glm-5.1",
+      "model": "zhipu-coding-plan/glm-5.2",
       "fallback_models": [
         "zhipu-coding-plan/glm-5-turbo",
         "zhipu-coding-plan/glm-4.7"
@@ -238,10 +240,10 @@
 
   // ===== Agents 配置 =====
   "agents": {
-    // 主编排：免费 Flash，ultrawork 用最强 GLM-5.1
+    // 主编排：免费 Flash，ultrawork 用最强 GLM-5.2
     "sisyphus": {
       "model": "opencode/deepseek-v4-flash-free",
-      "ultrawork": { "model": "zhipu-coding-plan/glm-5.1" },
+      "ultrawork": { "model": "zhipu-coding-plan/glm-5.2" },
       "fallback_models": [
         "opencode-go/deepseek-v4-flash",
         "opencode-go/deepseek-v4-pro",
@@ -251,9 +253,9 @@
 
     // 深度自主工作：最强编程能力
     "hephaestus": {
-      "model": "opencode-go/glm-5.1",
+      "model": "opencode-go/glm-5.2",
       "fallback_models": [
-        "zhipu-coding-plan/glm-5.1",
+        "zhipu-coding-plan/glm-5.2",
         "zhipu-coding-plan/glm-5-turbo",
         "bailian-coding-plan/glm-5"
       ]
@@ -351,9 +353,9 @@
   "categories": {
     // 复杂推理
     "ultrabrain": {
-      "model": "zhipu-coding-plan/glm-5.1",
+      "model": "zhipu-coding-plan/glm-5.2",
       "fallback_models": [
-        "opencode-go/glm-5.1",
+        "opencode-go/glm-5.2",
         "bailian-coding-plan/glm-5"
       ]
     },
@@ -456,19 +458,19 @@
 
 ## 模板二：三平台版（OpenCode Zen + OpenCode Go + 百炼，无智谱）
 
-适配未开通智谱平台的用户。将智谱模型替换为百炼/OpenCode Go 同级模型。
+ 适配未开通智谱平台的用户。将智谱模型替换为百炼/OpenCode Go 同级模型。
 
-```jsonc
-{
-  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
+  ```jsonc
+  {
+    "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
 
-  // ===== Agents 配置 =====
-  "agents": {
-    // 主编排：免费 Flash，ultrawork 用 OpenCode Go GLM-5.1
-    "sisyphus": {
-      "model": "opencode/deepseek-v4-flash-free",
-      "ultrawork": { "model": "opencode-go/glm-5.1" },
-      "fallback_models": [
+    // ===== Agents 配置 =====
+    "agents": {
+      // 主编排：免费 Flash，ultrawork 用 OpenCode Go GLM-5.2
+      "sisyphus": {
+        "model": "opencode/deepseek-v4-flash-free",
+        "ultrawork": { "model": "opencode-go/glm-5.2" },
+        "fallback_models": [
         "opencode-go/deepseek-v4-flash",
         "opencode-go/deepseek-v4-pro",
         "bailian-coding-plan/qwen3.6-plus"
@@ -477,7 +479,7 @@
 
     // 深度自主工作
     "hephaestus": {
-      "model": "opencode-go/glm-5.1",
+      "model": "opencode-go/glm-5.2",
       "fallback_models": [
         "bailian-coding-plan/glm-5",
         "opencode-go/qwen3.6-plus"
@@ -571,9 +573,9 @@
 
   // ===== Categories 配置 =====
   "categories": {
-    // 复杂推理：无智谱时用 OpenCode Go GLM-5.1
+    // 复杂推理：无智谱时用 OpenCode Go GLM-5.2
     "ultrabrain": {
-      "model": "opencode-go/glm-5.1",
+      "model": "opencode-go/glm-5.2",
       "fallback_models": [
         "bailian-coding-plan/glm-5",
         "opencode-go/qwen3.6-plus"
@@ -683,10 +685,10 @@
 
   // ===== Agents 配置 =====
   "agents": {
-    // 主编排：免费 Flash，ultrawork 用 OpenCode Go GLM-5.1
+    // 主编排：免费 Flash，ultrawork 用 OpenCode Go GLM-5.2
     "sisyphus": {
       "model": "opencode/deepseek-v4-flash-free",
-      "ultrawork": { "model": "opencode-go/glm-5.1" },
+      "ultrawork": { "model": "opencode-go/glm-5.2" },
       "fallback_models": [
         "opencode-go/deepseek-v4-flash",
         "opencode-go/deepseek-v4-pro",
@@ -696,7 +698,7 @@
 
     // 深度自主工作
     "hephaestus": {
-      "model": "opencode-go/glm-5.1",
+      "model": "opencode-go/glm-5.2",
       "fallback_models": [
         "opencode-go/qwen3.6-plus",
         "opencode-go/deepseek-v4-pro"
@@ -791,7 +793,7 @@
   "categories": {
     // 复杂推理
     "ultrabrain": {
-      "model": "opencode-go/glm-5.1",
+      "model": "opencode-go/glm-5.2",
       "fallback_models": [
         "opencode-go/qwen3.6-plus",
         "opencode-go/deepseek-v4-pro"
@@ -903,7 +905,7 @@
 | 架构咨询 (oracle) | GLM-5 | 百炼 / OpenCode Go | 中等 |
 | 前端/UI/视觉 (visual-engineering/artistry) | Qwen 3.6 Plus | 百炼 / OpenCode Go | 中等 |
 | 写作 (writing) | Qwen 3.6 Plus | 百炼 / OpenCode Go | 中等 |
-| 复杂推理 (ultrabrain/ultrawork) | GLM-5.1 | 智谱 / OpenCode Go | 高 |
+| 复杂推理 (ultrabrain/ultrawork) | GLM-5.2 | 智谱 / OpenCode Go | 高 |
 
 ### Fallback 链设计原则
 
