@@ -42,6 +42,35 @@ Install and configure [OpenCode](https://opencode.ai) on Windows / macOS / Linux
 | Zhipu Coding Plan | @ai-sdk/openai-compatible | GLM-5, GLM-5 Turbo, GLM-4.7, GLM-5.1 |
 | Alibaba Bailian Coding Plan | @ai-sdk/anthropic | Qwen3.5 Plus, Qwen3.6 Plus, GLM-5, Kimi K2.5 and more (9 total) |
 
+### difit
+
+View and review local git diffs in a GitHub-style WebUI using [difit](https://github.com/yoshiko-pg/difit). Supports commit review, branch comparison, PR review, and comment injection — comments can be copied as structured AI prompts.
+
+**Features**:
+- Review latest commit, specific commits, branch comparisons, working directory changes
+- Review GitHub PRs (requires GitHub CLI)
+- WebUI inline comment system with line or range selection
+- One-click copy comments as structured AI prompts
+- Agents can pre-inject review comments via `--comment`
+- Accept piped diffs from any diff tool via stdin
+- Auto-collapse deleted and auto-generated files
+
+**Usage examples**:
+
+```bash
+# Review latest commit
+difit
+
+# Review uncommitted changes
+difit .
+
+# Compare branches
+difit feature main
+
+# Review a PR
+difit --pr https://github.com/owner/repo/pull/123
+```
+
 ### opencode-update
 
 Safely update OpenCode to the latest version, handling macOS code signing, npm prefix conflicts, network issues (GFW), and other common update failures.
@@ -68,7 +97,7 @@ Safely update OpenCode to the latest version, handling macOS code signing, npm p
 
 ```bash
 # Install a single skill
-bash install.sh opencode-update
+bash install.sh difit
 
 # Install multiple skills
 bash install.sh opencode-cross-platform-setup opencode-update

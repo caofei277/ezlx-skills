@@ -65,6 +65,35 @@ curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.
 | 智谱 Coding Plan | @ai-sdk/openai-compatible | GLM-5, GLM-5 Turbo, GLM-4.7, GLM-5.1 |
 | 阿里云百炼 Coding Plan | @ai-sdk/anthropic | Qwen3.5 Plus, Qwen3.6 Plus, GLM-5, Kimi K2.5 等 9 个 |
 
+### difit
+
+使用 [difit](https://github.com/yoshiko-pg/difit) CLI 以 GitHub 风格 WebUI 查看和审查本地 git 差异，支持提交审查、分支对比、PR 审查和评论注入，评论可作为 AI 提示复制使用。
+
+**功能**：
+- 审查最新提交、指定提交、分支对比、工作目录变更
+- 审查 GitHub PR（配合 GitHub CLI）
+- WebUI 行内评论系统，支持按行或范围选择
+- 评论可一键复制为结构化 AI 提示
+- 代理可通过 `--comment` 参数预注入审查评论
+- 支持标准输入管道 diff（兼容任意 diff 工具）
+- 自动识别并折叠已删除文件、自动生成文件
+
+**使用示例**：
+
+```bash
+# 审查最新提交
+difit
+
+# 审查未提交的更改
+difit .
+
+# 对比分支
+difit feature main
+
+# 审查 PR
+difit --pr https://github.com/owner/repo/pull/123
+```
+
 ### opencode-update
 
 安全更新 OpenCode 到最新版本，处理 macOS 代码签名、npm prefix 冲突、网络不通（GFW）等常见更新失败问题。
@@ -91,7 +120,7 @@ curl -fsSL https://raw.githubusercontent.com/caofei277/ezlx-skills/main/install.
 
 ```bash
 # 安装单个 skill
-bash install.sh opencode-update
+bash install.sh difit
 
 # 安装多个 skill
 bash install.sh opencode-cross-platform-setup opencode-update
