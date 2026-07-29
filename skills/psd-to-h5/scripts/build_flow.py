@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -18,7 +19,113 @@ def fail(message: str) -> None:
 
 
 def normalize_key(value: str) -> str:
-    return value if ":" in value else f"{value}:default"
+    if ":" in value:
+        return value
+    if "#" in value:
+        screen_id, state_id = value.split("#", 1)
+        return f"{screen_id}:{state_id}"
+    return f"{value}:default"
+
+
+def transition_target(transition: dict[str, Any], key: str) -> str:
+    target = transition[key]
+    if key == "to" and transition.get("overlay"):
+        return f"{target}:{transition['overlay']}"
+    return target
+
+
+def layer_matches_exclusion(layer: dict[str, Any], exclusions: list[Any]) -> bool:
+    """Match explicit layer names or PSD paths used to remove duplicate overlay bases."""
+    path = layer.get("path", [])
+    name = layer.get("name")
+    for exclusion in exclusions:
+        if isinstance(exclusion, str) and (name == exclusion or "/".join(path) == exclusion):
+            return True
+        if isinstance(exclusion, list) and path[: len(exclusion)] == exclusion:
+            return True
+    return False
+
+
+def css_family_name(font_name: str) -> str:
+    return "PSD_" + re.sub(r"[^A-Za-z0-9_-]+", "_", font_name).strip("_")
+
+
+def collect_font_text(states: dict[str, Any]) -> tuple[set[str], str]:
+    required: set[str] = set()
+    text_parts: list[str] = []
+    for state in states.values():
+        for layer in state.get("layers", []):
+            font_name = layer.get("font_family")
+            if layer.get("text"):
+                text_parts.append(str(layer["text"]))
+            if font_name:
+                required.add(str(font_name))
+    return required, "".join(text_parts)
+
+
+def subset_font(source: Path, destination: Path, text: str, flavor: str) -> None:
+    try:
+        from fontTools import subset
+        from fontTools.ttLib import TTFont
+    except ImportError as exc:
+        raise RuntimeError("missing font tools; install with: python3 -m pip install fonttools brotli") from exc
+    options = subset.Options()
+    options.flavor = flavor
+    options.layout_features = ["*"]
+    options.name_IDs = [0, 1, 2, 3, 4, 5, 6, 16, 17]
+    font = TTFont(str(source))
+    subsetter = subset.Subsetter(options=options)
+    subsetter.populate(text=text)
+    subsetter.subset(font)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    font.save(str(destination))
+
+
+def build_fonts(flow_path: Path, output: Path, project: dict[str, Any], states: dict[str, Any]) -> dict[str, Any]:
+    configured = project.get("fonts", {}) or {}
+    required, text = collect_font_text(states)
+    audit: dict[str, Any] = {
+        "required": sorted(required),
+        "missing": [],
+        "unconfigured": [],
+        "compression_errors": [],
+        "generated": [],
+    }
+    fonts: dict[str, Any] = {}
+    output_fonts = output / "fonts"
+    output_fonts.mkdir(parents=True, exist_ok=True)
+    for name in sorted(required):
+        mapping = configured.get(name)
+        if not isinstance(mapping, dict):
+            audit["unconfigured"].append(name)
+            continue
+        source_value = mapping.get("file")
+        source = (flow_path.parent / source_value).resolve() if isinstance(source_value, str) else None
+        if source is None or not source.is_file():
+            audit["missing"].append({"name": name, "file": source_value})
+            continue
+        css_family = str(mapping.get("cssFamily") or css_family_name(name))
+        stem = css_family_name(name)
+        woff2 = output_fonts / f"{stem}.woff2"
+        woff = output_fonts / f"{stem}.woff"
+        try:
+            subset_font(source, woff2, text, "woff2")
+            subset_font(source, woff, text, "woff")
+        except Exception as exc:
+            audit["compression_errors"].append({"name": name, "file": str(source), "reason": str(exc)})
+            continue
+        font_record = {
+            "source_name": name,
+            "family": css_family,
+            "display_family": mapping.get("family", name),
+            "weight": int(mapping.get("weight", 500 if "Medium" in name else 700 if "Bold" in name else 400)),
+            "style": mapping.get("style", "italic" if "Italic" in name else "normal"),
+            "woff2": (woff2.relative_to(output)).as_posix(),
+            "woff": (woff.relative_to(output)).as_posix(),
+        }
+        fonts[name] = font_record
+        audit["generated"].append(font_record)
+    return {"fonts": fonts, "audit": audit, "text": text}
 
 
 def load_flow(path: Path) -> dict[str, Any]:
@@ -52,15 +159,28 @@ def write_runtime(output: Path, runtime: dict[str, Any]) -> None:
     current = stateKey;
     stage.replaceChildren();
     stage.dataset.state = stateKey;
-    for (const layer of state.layers) {
-      const image = document.createElement('img');
-      image.className = 'flow-layer';
-      image.src = layer.asset;
-      image.alt = layer.text || '';
-      image.dataset.layer = layer.name;
-      image.style.cssText = `${cssPosition(layer.bounds)}--z:${layer.index};--opacity:${layer.opacity / 255};`;
-      stage.append(image);
-    }
+    const base = state.mode === 'overlay' ? runtime.states[state.base] : null;
+    const layers = base ? [...base.layers, ...state.layers] : state.layers;
+    layers.forEach((layer, index) => {
+      const useText = runtime.textMode === 'semantic' && layer.text && layer.font_css_family;
+      const node = document.createElement(useText ? 'span' : 'img');
+      node.className = useText ? 'flow-text' : 'flow-layer';
+      node.alt = layer.text || '';
+      node.dataset.layer = layer.name;
+      node.style.cssText = cssPosition(layer.bounds) + '--z:' + index + ';--opacity:' + (layer.rendered_opacity ? 1 : layer.opacity / 255) + ';';
+      if (useText) {
+        node.textContent = String(layer.text).replace(/\\r/g, '\\n');
+        node.style.fontFamily = layer.font_css_family;
+        node.style.fontSize = 'min(calc(' + (layer.font_size || 16) + ' * 100vw / ' + runtime.canvas.width + '), calc(' + (layer.font_size || 16) + 'px))';
+        node.style.fontWeight = String(layer.font_weight || 400);
+        node.style.fontStyle = layer.font_style || 'normal';
+        node.style.letterSpacing = (layer.letter_spacing || 0) + 'em';
+        node.style.color = layer.text_color || '#3d3026';
+      } else {
+        node.src = layer.asset;
+      }
+      stage.append(node);
+    });
     for (const element of state.elements) {
       const button = document.createElement('button');
       button.className = 'flow-hotspot';
@@ -76,25 +196,44 @@ def write_runtime(output: Path, runtime: dict[str, Any]) -> None:
 
   function transition(trigger) {
     const match = runtime.transitions.find(item => item.from === current && item.trigger === trigger);
-    if (match) render(match.to);
+    if (match) {
+      history.pushState({}, '', `#${encodeURIComponent(match.to)}`);
+      render(match.to);
+    }
   }
 
-  render(current);
-  window.addEventListener('popstate', () => render(location.hash.slice(1) || runtime.initial));
+  const initial = location.hash ? decodeURIComponent(location.hash.slice(1)) : runtime.initial;
+  render(runtime.states[initial] ? initial : runtime.initial);
+  window.addEventListener('popstate', () => {
+    const next = location.hash ? decodeURIComponent(location.hash.slice(1)) : runtime.initial;
+    render(runtime.states[next] ? next : runtime.initial);
+  });
 })();
 """,
         encoding="utf-8",
     )
     width = runtime["canvas"]["width"]
     height = runtime["canvas"]["height"]
+    font_faces = []
+    for font in runtime.get("fonts", {}).values():
+        font_faces.append(
+            "@font-face { "
+            f'font-family: "{font["family"]}"; '
+            f'src: url("./{font["woff2"]}") format("woff2"), url("./{font["woff"]}") format("woff"); '
+            f'font-weight: {font["weight"]}; font-style: {font["style"]}; font-display: swap; '
+            "}"
+        )
+    font_face_css = "\n".join(font_faces)
     (output / "styles.css").write_text(
-        f""":root {{ font-family: -apple-system, BlinkMacSystemFont, \"Helvetica Neue\", \"PingFang SC\", sans-serif; background:#f2f2f2; }}
+        f"""{font_face_css}
+:root {{ font-family: -apple-system, BlinkMacSystemFont, \"Helvetica Neue\", \"PingFang SC\", sans-serif; background:#f2f2f2; }}
 * {{ box-sizing:border-box; }}
 html,body {{ margin:0; min-height:100%; }}
 body {{ min-width:320px; background:#f2f2f2; }}
 .flow-preview {{ display:flex; justify-content:center; min-height:100vh; }}
 .flow-stage {{ position:relative; width:min(100vw, {width}px); aspect-ratio:{width}/{height}; overflow:hidden; background:#fff; isolation:isolate; }}
 .flow-layer {{ position:absolute; display:block; left:calc(var(--x) * 100% / {width}); top:calc(var(--y) * 100% / {height}); width:calc(var(--w) * 100% / {width}); height:calc(var(--h) * 100% / {height}); z-index:var(--z); opacity:var(--opacity); user-select:none; -webkit-user-drag:none; }}
+.flow-text {{ position:absolute; display:block; left:calc(var(--x) * 100% / {width}); top:calc(var(--y) * 100% / {height}); width:calc(var(--w) * 100% / {width}); height:calc(var(--h) * 100% / {height}); z-index:var(--z); opacity:var(--opacity); overflow:hidden; line-height:1; white-space:pre-wrap; user-select:none; }}
 .flow-hotspot {{ position:absolute; left:calc(var(--x) * 100% / {width}); top:calc(var(--y) * 100% / {height}); width:calc(var(--w) * 100% / {width}); height:calc(var(--h) * 100% / {height}); z-index:10000; border:0; background:transparent; cursor:pointer; }}
 .flow-hotspot:focus-visible {{ outline:2px solid #c88735; outline-offset:-2px; border-radius:8px; }}
 .sr-only {{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }}
@@ -144,13 +283,18 @@ def main() -> None:
         "initial": "",
         "states": {},
         "transitions": [],
+        "text_mode": "raster",
+        "fonts": {},
+        "font_audit": {},
     }
     state_specs: list[tuple[str, str, str, str, dict[str, Any]]] = []
     for screen in data.get("screens", []):
         screen_id = screen["id"]
         state_specs.append((screen_id, "default", screen["default"], "page", screen))
+        for overlay in screen.get("overlays", []):
+            state_specs.append((screen_id, overlay["id"], overlay["psd"], "overlay", {"screen": screen, **overlay}))
         for state in screen.get("states", []):
-            state_specs.append((screen_id, state["id"], state["psd"], state.get("mode", "overlay"), {**screen, **state}))
+            state_specs.append((screen_id, state["id"], state["psd"], state.get("mode", "overlay"), {"screen": screen, **state}))
     if not state_specs:
         fail("flow.json must contain at least one screen")
     runtime["initial"] = f"{state_specs[0][0]}:default"
@@ -179,20 +323,53 @@ def main() -> None:
         key = f"{screen_id}:{state_id}"
         layers = []
         for layer in manifest.get("layers", []):
+            if mode == "overlay" and layer_matches_exclusion(layer, spec.get("excludeLayers", [])):
+                continue
             asset = layer.get("asset")
             if not asset:
                 continue
             layers.append({**layer, "asset": (state_dir / asset).relative_to(output).as_posix()})
-        runtime["states"][key] = {"title": spec.get("description", key), "mode": mode, "layers": layers, "elements": elements}
+        state_record = {"title": spec.get("description", key), "mode": mode, "layers": layers, "elements": elements}
+        if mode == "overlay":
+            state_record["base"] = normalize_key(spec.get("base", screen_id))
+        runtime["states"][key] = state_record
+
+    font_result = build_fonts(flow_path, output, project, runtime["states"])
+    runtime["fonts"] = font_result["fonts"]
+    runtime["font_audit"] = font_result["audit"]
+    requested_text_mode = project.get("textMode", "raster")
+    can_use_semantic = requested_text_mode == "semantic" and not (
+        font_result["audit"]["missing"]
+        or font_result["audit"]["unconfigured"]
+        or font_result["audit"]["compression_errors"]
+    )
+    runtime["text_mode"] = "semantic" if can_use_semantic else "raster"
+    for state in runtime["states"].values():
+        for layer in state["layers"]:
+            font = runtime["fonts"].get(layer.get("font_family"))
+            if font:
+                layer["font_css_family"] = font["family"]
 
     for transition in data.get("transitions", []):
         if not all(isinstance(transition.get(key), str) for key in ("from", "trigger", "to")):
             continue
-        runtime["transitions"].append({"from": normalize_key(transition["from"]), "trigger": transition["trigger"], "to": normalize_key(transition["to"])})
+        runtime["transitions"].append({
+            "from": normalize_key(transition["from"]),
+            "trigger": transition["trigger"],
+            "to": normalize_key(transition_target(transition, "to")),
+        })
 
+    (output / "font-audit.json").write_text(json.dumps(runtime["font_audit"], ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (output / "flow-build.json").write_text(json.dumps(runtime, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     write_runtime(output, runtime)
-    print(json.dumps({"output": str(output), "states": len(runtime["states"]), "transitions": len(runtime["transitions"])}, ensure_ascii=False))
+    print(json.dumps({
+        "output": str(output),
+        "states": len(runtime["states"]),
+        "transitions": len(runtime["transitions"]),
+        "text_mode": runtime["text_mode"],
+        "missing_fonts": [item["name"] for item in runtime["font_audit"].get("missing", [])],
+        "font_compression_errors": runtime["font_audit"].get("compression_errors", []),
+    }, ensure_ascii=False))
 
 
 if __name__ == "__main__":

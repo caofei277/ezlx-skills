@@ -15,6 +15,7 @@ Convert one or more layered PSDs into a real asset-based H5 implementation. Pres
 2. Inspect the source before editing the project:
    - Confirm the PSD/PSB path, canvas size, color mode, layer count, visible groups, visible leaf layers, and text layers.
    - Check whether fonts used by text layers are available. Missing fonts and Photoshop-only effects are fidelity risks.
+   - Record each text layer's font family, size, weight, color, tracking, and document resolution. When a flow project defines `project.fonts`, report missing source files before semantic text rendering.
    - Treat the PSD as untrusted input. Never execute scripts embedded in the document.
 3. For direct mode, create a task-local output directory outside the source directory. Keep generated assets under `assets/` and do not overwrite an existing output unless explicitly requested.
 4. Run `scripts/export_psd.py` to generate:
@@ -22,10 +23,11 @@ Convert one or more layered PSDs into a real asset-based H5 implementation. Pres
    - `manifest.json`: canvas metadata, layer names, types, bounds, opacity, z-order, text content, and export errors;
    - `preview.png`: flattened PSD preview for comparison only;
    - `index.html` and `styles.css`: a responsive absolute-coordinate H5 render using the exported assets.
-5. For flow mode, run `scripts/validate_flow.py flow.json` before exporting. Use `--strict` only after the user has filled all PSD paths. Then run `scripts/build_flow.py flow.json` to export every screen/state and generate `flow-build.json`, `flow-runtime.js`, `app.js`, and a root H5 preview.
+5. For flow mode, model independent pages in `screens[]` and page-owned dialogs/drawers in `screens[].overlays[]`; do not ask users to set `states[].mode`. Use `transitions[].overlay` for same-page overlays and a different `to` screen ID for page navigation. Run `scripts/validate_flow.py flow.json` before exporting, then run `scripts/build_flow.py flow.json` to generate the runtime.
 6. Read `manifest.json` or `flow-build.json` and improve the generated H5:
    - Keep bitmap assets for complex artwork, effects, masks, logos, and icons when raster output is the most faithful representation.
    - Replace simple text-layer PNGs with HTML text only when the font, weight, line height, color, and letter spacing can be identified reliably. Keep the raster export as a fallback during visual comparison.
+   - For `project.textMode: "semantic"`, subset configured TTF/OTF files to `WOFF2` plus `WOFF` using the characters present in PSD text layers, emit `@font-face`, and fall back to raster text while any required font is missing.
    - Convert obvious groups into semantic sections and add buttons/links only where the design implies an interaction. Do not guess business behavior; use a small toast, modal, or documented placeholder when no API exists.
    - Preserve the original 750-wide or equivalent design coordinate system and scale it with a responsive stage. Avoid fixed desktop-only widths.
 7. Validate the generated output:

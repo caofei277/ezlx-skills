@@ -1,4 +1,0 @@
-interface:
-  display_name: "PSD to H5"
-  short_description: "Convert PSD screens and states into interactive H5"
-  default_prompt: "Use $psd-to-h5 to convert these PSD screens or states into sliced assets, interactive H5 flow, and screenshot-verified output."

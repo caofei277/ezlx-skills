@@ -59,23 +59,74 @@ def layer_text(layer: Any) -> str | None:
     return value if isinstance(value, str) else None
 
 
+def text_styles(layer: Any) -> list[dict[str, Any]]:
+    """Extract browser-relevant character styles from Photoshop EngineData."""
+    if getattr(layer, "kind", None) != "type":
+        return []
+    try:
+        engine = getattr(layer, "engine_dict", {}) or {}
+        resources = getattr(layer, "resource_dict", {}) or {}
+        font_set = resources.get("FontSet", []) or []
+        runs = ((engine.get("StyleRun") or {}).get("RunArray") or [])
+        styles: list[dict[str, Any]] = []
+        for run in runs:
+            data = ((run.get("StyleSheet") or {}).get("StyleSheetData") or {})
+            raw_index = data.get("Font")
+            index = int(raw_index) if raw_index is not None else -1
+            font_name = ""
+            if 0 <= index < len(font_set):
+                font_name = str(font_set[index].get("Name", "")).strip().strip("'\"")
+            raw_size = data.get("FontSize")
+            font_size = float(raw_size) if raw_size is not None else None
+            fill = data.get("FillColor") or {}
+            values = fill.get("Values") or []
+            color = None
+            if len(values) >= 4:
+                # Photoshop stores this color as alpha, red, green, blue.
+                color = "#%02x%02x%02x" % tuple(max(0, min(255, round(float(value) * 255))) for value in values[1:4])
+            styles.append({
+                "font_family": font_name,
+                "font_size": font_size,
+                "font_weight": 700 if data.get("FauxBold") or "Bold" in font_name else 400,
+                "font_style": "italic" if data.get("FauxItalic") else "normal",
+                "letter_spacing": float(data.get("Tracking", 0) or 0) / 1000,
+                "color": color,
+            })
+        return [style for style in styles if style.get("font_family") or style.get("font_size")]
+    except Exception:
+        return []
+
+
+def has_effects(layer: Any) -> bool:
+    try:
+        return bool(list(getattr(layer, "effects", ()) or ()))
+    except Exception:
+        return False
+
+
 def walk_layers(node: Any, parent_visible: bool = True, path: tuple[str, ...] = ()) -> Iterable[tuple[Any, bool, tuple[str, ...]]]:
     for child in node:
         current_path = path + (str(getattr(child, "name", "layer")),)
         visible = parent_visible and bool(getattr(child, "visible", True))
         yield child, visible, current_path
-        if getattr(child, "kind", None) == "group":
+        # Render an effect-bearing group as one asset so inherited effects are
+        # preserved instead of being lost or duplicated across its children.
+        if getattr(child, "kind", None) == "group" and not has_effects(child):
             yield from walk_layers(child, visible, current_path)
 
 
 def render_layer(layer: Any):
+    composite_error = None
     try:
-        return layer.topil().convert("RGBA")
-    except Exception:
-        try:
-            return layer.composite().convert("RGBA")
-        except Exception as exc:
-            raise RuntimeError(str(exc)) from exc
+        image = layer.composite()
+        if image is not None:
+            return image.convert("RGBA"), "composite", composite_error
+    except Exception as exc:
+        composite_error = str(exc)
+    image = layer.topil()
+    if image is None:
+        raise RuntimeError("layer renderer returned no image")
+    return image.convert("RGBA"), "topil-fallback", composite_error
 
 
 def write_h5(output: Path, width: int, height: int, layers: list[dict[str, Any]], text_mode: str) -> None:
@@ -87,7 +138,7 @@ def write_h5(output: Path, width: int, height: int, layers: list[dict[str, Any]]
         common = (
             f'data-layer="{escape(layer["name"], quote=True)}" data-kind="{layer["kind"]}" '
             f'data-text="{alt}" style="--x:{left};--y:{top};--w:{right-left};--h:{bottom-top};'
-            f'--z:{index};--opacity:{layer["opacity"] / 255:.4f};'
+            f'--z:{index};--opacity:{1 if layer.get("rendered_opacity") else layer["opacity"] / 255:.4f};'
         )
         if text_mode == "semantic" and text:
             font_size = max(8, int((bottom - top) * 0.78))
@@ -156,7 +207,7 @@ def main() -> None:
     order = 0
     for layer, visible, path in walk_layers(psd):
         kind = str(getattr(layer, "kind", "unknown"))
-        if kind == "group" or (not visible and not args.include_hidden):
+        if (kind == "group" and not has_effects(layer)) or (not visible and not args.include_hidden):
             continue
         bounds = as_bounds(getattr(layer, "bbox", None))
         if bounds is None:
@@ -173,13 +224,39 @@ def main() -> None:
             "visible": visible,
             "bounds": bounds,
             "opacity": int(getattr(layer, "opacity", 255) or 255),
+            "rendered_opacity": True,
             "asset": f"assets/{filename}",
         }
+        try:
+            record["blend_mode"] = str(getattr(layer, "blend_mode", "normal"))
+        except Exception:
+            record["blend_mode"] = "normal"
+        record["clipping"] = bool(getattr(layer, "clipping", False))
+        record["has_mask"] = getattr(layer, "mask", None) is not None
+        record["has_vector_mask"] = getattr(layer, "vector_mask", None) is not None
+        try:
+            record["effects"] = [type(effect).__name__ for effect in getattr(layer, "effects", ()) or ()]
+        except Exception:
+            record["effects"] = []
         text = layer_text(layer)
         if text is not None:
             record["text"] = text
+            styles = text_styles(layer)
+            if styles:
+                record["text_styles"] = styles
+                record["font_family"] = styles[0].get("font_family", "")
+                record["font_size"] = styles[0].get("font_size")
+                record["font_weight"] = styles[0].get("font_weight", 400)
+                record["font_style"] = styles[0].get("font_style", "normal")
+                record["letter_spacing"] = styles[0].get("letter_spacing", 0)
+                record["text_color"] = styles[0].get("color")
         try:
-            render_layer(layer).save(asset_path, "PNG", optimize=True)
+            image, render_mode, render_warning = render_layer(layer)
+            record["render_mode"] = render_mode
+            record["rendered_opacity"] = render_mode == "composite"
+            if render_warning:
+                record["render_warning"] = render_warning
+            image.save(asset_path, "PNG", optimize=True)
         except Exception as exc:
             record.pop("asset", None)
             errors.append({"name": name, "kind": kind, "bounds": bounds, "reason": str(exc)})

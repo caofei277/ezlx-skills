@@ -5,18 +5,20 @@ Use `flow.json` only when the task has multiple screens or multiple visual state
 ## Core Objects
 
 - `project`: name, design dimensions, and output directory.
-- `screens[]`: route-level screens. Each screen has one `default` PSD, optional `states[]`, and optional `elements[]`.
-- `states[]`: alternate full-canvas PSDs for the same screen. Use `mode: "overlay"` for dialogs/drawers and `mode: "route"` or `"page"` for page-level states.
+- `screens[]`: independent pages. Each screen has one `default` PSD, optional `overlays[]`, and optional `elements[]`.
+- `overlays[]`: dialogs, drawers, masks, bottom sheets, and other visual layers belonging to the current screen. Overlay entries do not have a user-facing `mode` field.
+- `base`: optional screen state covered by an overlay. `excludeLayers` can remove duplicate full-canvas base layers from the overlay PSD. The runtime renders the base layers first and overlay layers above them.
 - `elements[]`: user-described interaction targets. Prefer a stable `id`, a PSD `layer` name, and a plain-language `description`. Use `bounds: [left, top, right, bottom]` when no reliable layer name exists.
-- `transitions[]`: state graph edges with `from`, `trigger`, and `to` values. State keys use `screen:state`, with `screen` shorthand meaning `screen:default`.
+- `project.fonts`: maps the exact font names found in PSD text layers to source files under the project. The builder audits these files, subsets the glyphs, emits `WOFF2` plus `WOFF`, and injects `@font-face` rules. Set `project.textMode` to `semantic` to use WebFonts when every required font is available; otherwise the builder keeps raster text.
+- `transitions[]`: page and overlay interactions. A page transition uses `from: "页面A"` and `to: "页面B"`; opening an overlay uses `from: "页面A"`, `to: "页面A"`, and `overlay: "弹层ID"`. A transition from an open overlay may use `from: "页面A#弹层ID"`.
 
 ## Authoring Rules
 
-1. Keep all PSDs for one screen at the same canvas size and alignment.
-2. Treat each alternate PSD as a complete visual state unless the state is explicitly supplied as a separate overlay asset. This keeps screenshots and state transitions deterministic.
+1. Keep the default PSD and all overlays for one screen at the same canvas size and alignment.
+2. Put every independent page in `screens[]`; put dialogs and drawers inside that page's `overlays[]`.
 3. Describe design intent in `description` fields. Explain what an element means, what a click should do, and which state should appear.
 4. Use stable IDs that describe intent, such as `open-settings`, `asset-card`, and `close-dialog`. Do not use generated layer indexes as IDs.
-5. Keep route transitions and overlay transitions explicit. Do not infer a destructive action or a business API from visual appearance alone.
+5. Keep page transitions and overlay transitions explicit. Do not infer a destructive action or a business API from visual appearance alone.
 6. For long design notes, place a Markdown note beside the PSD under `notes/` and reference its path from the screen or state with `notes`.
 
 ## Example
@@ -33,13 +35,13 @@ Use `flow.json` only when the task has multiple screens or multiple visual state
       "elements": [
         {"id": "打开资产明细", "layer": "资产中心", "description": "点击资产中心，打开资产明细弹窗。"}
       ],
-      "states": [
-        {"id": "资产明细弹窗", "psd": "psd/个人中心资产弹窗.psd", "mode": "overlay", "description": "在个人中心上方打开资产明细弹窗。"}
+      "overlays": [
+        {"id": "资产明细弹窗", "psd": "psd/个人中心资产弹窗.psd", "description": "在个人中心上方打开资产明细弹窗。"}
       ]
     }
   ],
   "transitions": [
-    {"from": "个人中心:default", "trigger": "打开资产明细", "to": "个人中心:资产明细弹窗"}
+    {"from": "个人中心", "trigger": "打开资产明细", "to": "个人中心", "overlay": "资产明细弹窗"}
   ]
 }
 ```

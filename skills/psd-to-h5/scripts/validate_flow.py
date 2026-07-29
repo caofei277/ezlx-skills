@@ -18,6 +18,59 @@ def state_key(screen_id: str, state_id: str) -> str:
     return f"{screen_id}:{state_id}"
 
 
+def normalize_target(value: str) -> str:
+    if ":" in value:
+        return value
+    if "#" in value:
+        screen_id, state_id = value.split("#", 1)
+        return state_key(screen_id, state_id)
+    return state_key(value, "default")
+
+
+def transition_target(transition: dict[str, Any], key: str) -> str | None:
+    target = transition.get(key)
+    if not isinstance(target, str):
+        return None
+    overlay = transition.get("overlay") if key == "to" else None
+    return state_key(target, overlay) if isinstance(overlay, str) and overlay else normalize_target(target)
+
+
+def validate_visual_entries(
+    screen_id: str,
+    entries: Any,
+    entry_name: str,
+    base_dir: Path,
+    known_states: set[str],
+    seen_states: set[str],
+    errors: list[str],
+    warnings: list[str],
+    strict: bool,
+    allow_mode: bool = False,
+) -> None:
+    if not isinstance(entries, list):
+        errors.append(f"{screen_id}.{entry_name} must be an array")
+        return
+    for entry in entries:
+        if not isinstance(entry, dict):
+            errors.append(f"{screen_id}.{entry_name} entries must be objects")
+            continue
+        entry_id = entry.get("id")
+        psd_path = entry.get("psd")
+        if not isinstance(entry_id, str) or not entry_id:
+            errors.append(f"{screen_id} {entry_name[:-1]} needs a non-empty id")
+            continue
+        if entry_id in seen_states:
+            errors.append(f"duplicate state id: {screen_id}:{entry_id}")
+        seen_states.add(entry_id)
+        known_states.add(state_key(screen_id, entry_id))
+        if allow_mode and entry.get("mode", "overlay") not in ("overlay", "route", "page"):
+            errors.append(f"invalid mode for {screen_id}:{entry_id}")
+        if not isinstance(psd_path, str):
+            errors.append(f"{screen_id}:{entry_id}.psd must be a PSD path")
+        elif not (base_dir / psd_path).resolve().is_file():
+            issue(f"missing PSD: {psd_path}", errors, warnings, strict)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("flow", type=Path)
@@ -69,30 +122,11 @@ def main() -> int:
             if not path.is_file():
                 issue(f"missing PSD: {default_psd}", errors, warnings, args.strict)
         known_states.add(state_key(screen_id, "default"))
-        states = screen.get("states", [])
-        if not isinstance(states, list):
-            errors.append(f"{screen_id}.states must be an array")
-            states = []
         seen_states: set[str] = {"default"}
-        for state in states:
-            if not isinstance(state, dict):
-                errors.append(f"{screen_id}.states entries must be objects")
-                continue
-            state_id = state.get("id")
-            psd_path = state.get("psd")
-            if not isinstance(state_id, str) or not state_id:
-                errors.append(f"{screen_id} state needs a non-empty id")
-                continue
-            if state_id in seen_states:
-                errors.append(f"duplicate state id: {screen_id}:{state_id}")
-            seen_states.add(state_id)
-            known_states.add(state_key(screen_id, state_id))
-            if state.get("mode", "overlay") not in ("overlay", "route", "page"):
-                errors.append(f"invalid mode for {screen_id}:{state_id}")
-            if not isinstance(psd_path, str):
-                errors.append(f"{screen_id}:{state_id}.psd must be a PSD path")
-            elif not (base_dir / psd_path).resolve().is_file():
-                issue(f"missing PSD: {psd_path}", errors, warnings, args.strict)
+        validate_visual_entries(screen_id, screen.get("overlays", []), "overlays", base_dir, known_states, seen_states, errors, warnings, args.strict)
+        if "states" in screen:
+            warnings.append(f"{screen_id}.states is deprecated; use overlays without a mode field")
+            validate_visual_entries(screen_id, screen.get("states"), "states", base_dir, known_states, seen_states, errors, warnings, args.strict, allow_mode=True)
         elements = screen.get("elements", [])
         if not isinstance(elements, list):
             errors.append(f"{screen_id}.elements must be an array")
@@ -117,12 +151,14 @@ def main() -> int:
         for key in ("from", "trigger", "to"):
             if not isinstance(transition.get(key), str) or not transition[key]:
                 errors.append(f"transition {index} needs {key}")
+        overlay = transition.get("overlay")
+        if overlay is not None and (not isinstance(overlay, str) or not overlay):
+            errors.append(f"transition {index}.overlay must be a non-empty string")
         for key in ("from", "to"):
+            normalized = transition_target(transition, key)
             target = transition.get(key)
-            if isinstance(target, str):
-                normalized = target if ":" in target else state_key(target, "default")
-                if normalized not in known_states:
-                    errors.append(f"transition {index} references unknown state: {target}")
+            if normalized and normalized not in known_states:
+                errors.append(f"transition {index} references unknown state: {target}")
 
     for warning in warnings:
         print(f"warning: {warning}")
