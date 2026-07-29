@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from font_audit import audit_project_fonts, flow_psd_paths, scan_psd_paths
+
 
 def issue(message: str, errors: list[str], warnings: list[str], strict: bool = False) -> None:
     (errors if strict else warnings).append(message)
@@ -159,6 +161,33 @@ def main() -> int:
             target = transition.get(key)
             if normalized and normalized not in known_states:
                 errors.append(f"transition {index} references unknown state: {target}")
+
+    # PSD text layers define required project inputs. System-installed fonts do
+    # not count; every discovered family needs an explicit fonts/ mapping.
+    psd_paths = flow_psd_paths(data, base_dir)
+    existing_psd_paths = [path for path in psd_paths if path.is_file()]
+    if existing_psd_paths:
+        try:
+            font_scan = scan_psd_paths(existing_psd_paths, base_dir)
+            font_audit = audit_project_fonts(font_scan["required"], project, base_dir)
+            for item in font_scan["errors"]:
+                issue(f"font scan failed for {item['psd']}: {item['reason']}", errors, warnings, args.strict)
+            for item in font_audit["missing_mapping"]:
+                issue(
+                    f"missing font mapping: {item['name']} (add project.fonts.{item['name']})",
+                    errors,
+                    warnings,
+                    args.strict,
+                )
+            for item in font_audit["missing_source"]:
+                issue(
+                    f"missing font source: {item['name']} -> {item.get('file') or '(not configured)'}",
+                    errors,
+                    warnings,
+                    args.strict,
+                )
+        except RuntimeError as exc:
+            issue(f"font audit unavailable: {exc}", errors, warnings, args.strict)
 
     for warning in warnings:
         print(f"warning: {warning}")

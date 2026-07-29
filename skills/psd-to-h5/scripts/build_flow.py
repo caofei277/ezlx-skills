@@ -12,6 +12,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from font_audit import audit_project_fonts, flow_psd_paths, scan_psd_paths
+
 
 def fail(message: str) -> None:
     print(f"[psd-to-h5] error: {message}", file=sys.stderr)
@@ -337,6 +339,18 @@ def main() -> None:
     font_result = build_fonts(flow_path, output, project, runtime["states"])
     runtime["fonts"] = font_result["fonts"]
     runtime["font_audit"] = font_result["audit"]
+    try:
+        all_psd_paths = [path for path in flow_psd_paths(data, flow_path.parent) if path.is_file()]
+        font_scan = scan_psd_paths(all_psd_paths, flow_path.parent)
+        source_audit = audit_project_fonts(font_scan["required"], project, flow_path.parent)
+        runtime["font_audit"]["psd_required"] = font_scan["required"]
+        runtime["font_audit"]["missing_mapping"] = source_audit["missing_mapping"]
+        runtime["font_audit"]["missing_source"] = source_audit["missing_source"]
+        runtime["font_audit"]["scan_errors"] = font_scan["errors"]
+        runtime["font_audit"]["unconfigured"] = [item["name"] for item in source_audit["missing_mapping"]]
+        runtime["font_audit"]["missing"] = source_audit["missing_source"]
+    except RuntimeError as exc:
+        runtime["font_audit"]["scan_errors"] = [{"reason": str(exc)}]
     requested_text_mode = project.get("textMode", "raster")
     can_use_semantic = requested_text_mode == "semantic" and not (
         font_result["audit"]["missing"]
@@ -362,12 +376,19 @@ def main() -> None:
     (output / "font-audit.json").write_text(json.dumps(runtime["font_audit"], ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (output / "flow-build.json").write_text(json.dumps(runtime, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     write_runtime(output, runtime)
+    font_gaps = [item["name"] for item in runtime["font_audit"].get("missing_mapping", [])]
+    font_gaps += [item["name"] for item in runtime["font_audit"].get("missing_source", [])]
+    if font_gaps:
+        print("[psd-to-h5] FONT INPUT REQUIRED: provide these PSD fonts in project.fonts and fonts/:", file=sys.stderr)
+        for name in sorted(set(font_gaps)):
+            print(f"  - {name}", file=sys.stderr)
     print(json.dumps({
         "output": str(output),
         "states": len(runtime["states"]),
         "transitions": len(runtime["transitions"]),
         "text_mode": runtime["text_mode"],
-        "missing_fonts": [item["name"] for item in runtime["font_audit"].get("missing", [])],
+        "missing_fonts": sorted(set(font_gaps)),
+        "missing_font_mappings": runtime["font_audit"].get("unconfigured", []),
         "font_compression_errors": runtime["font_audit"].get("compression_errors", []),
     }, ensure_ascii=False))
 

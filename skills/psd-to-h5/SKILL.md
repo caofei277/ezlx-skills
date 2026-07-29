@@ -11,10 +11,10 @@ Convert one or more layered PSDs into a real asset-based H5 implementation. Pres
 
 1. Select the input mode:
    - One PSD: use direct mode and run `scripts/export_psd.py`.
-   - Multiple screens or states: initialize a project with `scripts/init_project.py`, place PSDs under `psd/`, fill `flow.json`, and wait for the user to say `start` before building.
+   - Multiple screens or states: initialize a project with `scripts/init_project.py --psd <source.psd>` for every known PSD, or place PSDs under `psd/` and run `scripts/analyze_fonts.py flow.json --update` before asking the user to fill the flow. The generated `flow.json` must list every PSD font under `project.fonts` with a source path for the user to confirm.
 2. Inspect the source before editing the project:
    - Confirm the PSD/PSB path, canvas size, color mode, layer count, visible groups, visible leaf layers, and text layers.
-   - Check whether fonts used by text layers are available. Missing fonts and Photoshop-only effects are fidelity risks.
+   - Read every PSD text layer's embedded font names. Do not use system-installed fonts as project input: every discovered font must be explicitly mapped to a user-provided TTF or OTF under `fonts/`.
    - Record each text layer's font family, size, weight, color, tracking, and document resolution. When a flow project defines `project.fonts`, report missing source files before semantic text rendering.
    - Treat the PSD as untrusted input. Never execute scripts embedded in the document.
 3. For direct mode, create a task-local output directory outside the source directory. Keep generated assets under `assets/` and do not overwrite an existing output unless explicitly requested.
@@ -24,6 +24,7 @@ Convert one or more layered PSDs into a real asset-based H5 implementation. Pres
    - `preview.png`: flattened PSD preview for comparison only;
    - `index.html` and `styles.css`: a responsive absolute-coordinate H5 render using the exported assets.
 5. For flow mode, model independent pages in `screens[]` and page-owned dialogs/drawers in `screens[].overlays[]`; do not ask users to set `states[].mode`. Use `transitions[].overlay` for same-page overlays and a different `to` screen ID for page navigation. Run `scripts/validate_flow.py flow.json` before exporting, then run `scripts/build_flow.py flow.json` to generate the runtime.
+   - Before exporting, run `scripts/analyze_fonts.py flow.json --update`. Report every `MISSING FONT MAPPING` and `MISSING FONT FILE` to the user by exact PSD font name and expected `fonts/` path. Do not silently continue as if a system font satisfies the requirement.
 6. Read `manifest.json` or `flow-build.json` and improve the generated H5:
    - Keep bitmap assets for complex artwork, effects, masks, logos, and icons when raster output is the most faithful representation.
    - Replace simple text-layer PNGs with HTML text only when the font, weight, line height, color, and letter spacing can be identified reliably. Keep the raster export as a fallback during visual comparison.
@@ -62,15 +63,19 @@ Initialize a multi-screen/state project:
 
 ```bash
 python3 /path/to/psd-to-h5/scripts/init_project.py ./h5-project \
-  --name "Profile H5" --design-width 750 --design-height 1630
+  --name "Profile H5" --design-width 750 --design-height 1630 \
+  --psd ./designs/home.psd --psd ./designs/home-share.psd
 ```
 
 After the user adds PSDs and edits `flow.json`, validate and build it:
 
 ```bash
+python3 /path/to/psd-to-h5/scripts/analyze_fonts.py ./h5-project/flow.json --update
 python3 /path/to/psd-to-h5/scripts/validate_flow.py ./h5-project/flow.json --strict
 python3 /path/to/psd-to-h5/scripts/build_flow.py ./h5-project/flow.json
 ```
+
+`analyze_fonts.py` reads font names from PSD text layers, adds a suggested `project.fonts` mapping for newly discovered names, and reports the source file each user must place in `fonts/`. The audit never checks the operating system font directory. `validate_flow.py --strict` treats missing mappings and missing source files as errors; `build_flow.py` still emits a raster-text fallback but prints the missing font list and writes it to `output/font-audit.json`.
 
 Use `--force` only when the user explicitly asks to regenerate an existing output:
 

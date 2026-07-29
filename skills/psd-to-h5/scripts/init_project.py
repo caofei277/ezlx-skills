@@ -8,6 +8,8 @@ import json
 import sys
 from pathlib import Path
 
+from font_audit import audit_project_fonts, scan_psd_paths, suggested_mapping
+
 
 def fail(message: str) -> None:
     print(f"[psd-to-h5] error: {message}", file=sys.stderr)
@@ -20,6 +22,7 @@ def main() -> None:
     parser.add_argument("--name", default="PSD 转 H5 项目")
     parser.add_argument("--design-width", type=int, default=750)
     parser.add_argument("--design-height", type=int, default=1630)
+    parser.add_argument("--psd", action="append", default=[], help="PSD/PSB source to scan for required fonts; repeat for multiple files")
     args = parser.parse_args()
 
     if args.design_width <= 0 or args.design_height <= 0:
@@ -120,10 +123,24 @@ def main() -> None:
             "独立页面配置在 screens[]；页面内弹窗、抽屉或遮罩配置在 overlays[]。",
             "跨页面跳转只填写 transitions.to；打开页面内 overlay 时额外填写 transitions.overlay。",
             "JSON 不支持 // 注释，因此字段说明和示例集中放在同一个文件的 _guide 与 _examples 中，构建时会忽略它们。",
+            "初始化时可使用 --psd 文件路径重复传入 PSD；程序会读取文本图层并把所需字体写入 project.fonts。没有在初始化时传入 PSD 时，放入 psd/ 后运行 analyze_fonts.py flow.json --update。",
             "字体文件请按 project.fonts 中的 file 路径放入 fonts/，构建时会自动检查、子集化为 WOFF2 并引入页面。",
             "填写完成后对 AI 说“开始”，即可执行切图、组装和浏览器校验。",
         ],
     }
+    if args.psd:
+        scan = scan_psd_paths((Path(item) for item in args.psd), root)
+        project = flow["project"]
+        for item in scan["required"]:
+            project["fonts"].setdefault(item["name"], suggested_mapping(item["name"]))
+        audit = audit_project_fonts(scan["required"], project, root)
+        flow["_fontAudit"] = {
+            "说明": "初始化时从 PSD 文本图层读取的字体清单；字体文件必须由用户放入 fonts/ 并在 project.fonts 中确认路径。",
+            "required": scan["required"],
+            "missingMapping": audit["missing_mapping"],
+            "missingSource": audit["missing_source"],
+            "scanErrors": scan["errors"],
+        }
     (root / "flow.json").write_text(json.dumps(flow, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"project": str(root), "flow": str(root / "flow.json")}, ensure_ascii=False))
 
