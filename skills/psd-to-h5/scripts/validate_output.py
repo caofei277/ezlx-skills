@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the asset and manifest output produced by export_psd.py."""
+"""Validate the asset and effect-rendering quality produced by export_psd.py."""
 
 from __future__ import annotations
 
@@ -19,6 +19,8 @@ def main() -> int:
         return 1
     data = json.loads(manifest_path.read_text(encoding="utf-8"))
     failures: list[str] = []
+    if data.get("asset_policy") not in ("visible-leaf-only", "visible-leaf-plus-group-effect-boundaries"):
+        failures.append("manifest asset_policy is missing or does not enforce PSD layer boundaries")
     canvas = data.get("canvas", {})
     if not canvas.get("width") or not canvas.get("height"):
         failures.append("manifest canvas is missing width/height")
@@ -32,8 +34,24 @@ def main() -> int:
     for filename in ("index.html", "styles.css", "preview.png"):
         if not (output / filename).is_file():
             failures.append(f"missing generated file: {filename}")
-    if data.get("errors"):
-        print(f"warning: {len(data['errors'])} layer/composite errors are recorded in manifest.json")
+    errors = data.get("errors", []) or []
+    if errors:
+        fatal_errors = [error for error in errors if error.get("fatal")]
+        if fatal_errors:
+            failures.append(f"{len(fatal_errors)} fatal layer/composite errors are recorded in manifest.json")
+        else:
+            print(f"warning: {len(errors)} non-fatal layer/composite errors are recorded in manifest.json")
+    effect_fallbacks = int(data.get("effect_fallback_count", 0) or 0)
+    if effect_fallbacks:
+        failures.append(f"{effect_fallbacks} effect-bearing layers used topil fallback; install psd-tools[composite]")
+    for layer in data.get("layers", []):
+        if layer.get("kind") == "group":
+            if not layer.get("effects") or layer.get("asset_scope") != "group-effect" or layer.get("flatten_reason") != "group-level-effect":
+                failures.append(f"group layer {layer.get('name')!r} was flattened without an explicit group-level effect boundary")
+        if layer.get("effects") and layer.get("render_mode") not in ("composite", "composite-context"):
+            failures.append(f"effect layer {layer.get('name')!r} was not rendered with composite support")
+    if data.get("group_effect_count"):
+        print(f"warning: {data['group_effect_count']} explicit group-level effect boundary asset(s) are recorded")
     if failures:
         for failure in failures:
             print(f"error: {failure}", file=sys.stderr)

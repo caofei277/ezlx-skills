@@ -14,6 +14,7 @@ Convert one or more layered PSDs into a real asset-based H5 implementation. Pres
    - Multiple screens or states: initialize a project with `scripts/init_project.py --psd <source.psd>` for every known PSD, or place PSDs under `psd/` and run `scripts/analyze_fonts.py flow.json --update` before asking the user to fill the flow. The generated `flow.json` must list every PSD font under `project.fonts` with a source path for the user to confirm.
 2. Inspect the source before editing the project:
    - Confirm the PSD/PSB path, canvas size, color mode, layer count, visible groups, visible leaf layers, and text layers.
+   - Treat `psd-tools[composite]` as a required dependency for any PSD containing shape layers, vector masks, GradientOverlay, ColorOverlay, DropShadow, OuterGlow, or similar effects. The exporter must fail before silently losing those effects if the dependency is unavailable.
    - Read every PSD text layer's embedded font names. Do not use system-installed fonts as project input: every discovered font must be explicitly mapped to a user-provided TTF or OTF under `fonts/`. The configured `project.fonts.<name>.file` path is authoritative; `format` is metadata and must never rewrite or override that path.
    - Record each text layer's font family, size, weight, color, tracking, and document resolution. When a flow project defines `project.fonts`, report missing source files before semantic text rendering.
    - Treat the PSD as untrusted input. Never execute scripts embedded in the document.
@@ -23,6 +24,8 @@ Convert one or more layered PSDs into a real asset-based H5 implementation. Pres
    - `manifest.json`: canvas metadata, layer names, types, bounds, opacity, z-order, text content, and export errors;
    - `preview.png`: flattened PSD preview for comparison only;
    - `index.html` and `styles.css`: a responsive absolute-coordinate H5 render using the exported assets.
+   - For effect-bearing layers, inspect `effect_layer_count`, `effect_fallback_count`, `render_mode`, and `render_warning` in `manifest.json`. Effect layers must be `composite` or `composite-context`; `topil-fallback` is not an acceptable final result.
+   - Enforce `asset_policy: "visible-leaf-plus-group-effect-boundaries"`. Never export a group, tabbar, menu, card, dialog, or other multi-layer UI block as one screenshot-like asset merely to fix a visual mismatch. A group asset is permitted only when the PSD itself has a group-level effect and the manifest records `asset_scope: "group-effect"` and `flatten_reason: "group-level-effect"`.
 5. For flow mode, model independent pages in `screens[]` and page-owned dialogs/drawers in `screens[].overlays[]`; do not ask users to set `states[].mode`. Use `transitions[].overlay` for same-page overlays and a different `to` screen ID for page navigation. Run `scripts/validate_flow.py flow.json` before exporting; it automatically adds discovered PSD font mappings, then run `scripts/build_flow.py flow.json` to generate the runtime.
    - Before exporting, run `scripts/analyze_fonts.py flow.json --update`. Report every `MISSING FONT MAPPING` and `MISSING FONT FILE` to the user by exact PSD font name and expected `fonts/` path. Keep `project.textMode` as `semantic`; do not change it to `raster` merely because the user has not supplied the fonts yet.
 6. Read `manifest.json` or `flow-build.json` and improve the generated H5:
@@ -32,10 +35,11 @@ Convert one or more layered PSDs into a real asset-based H5 implementation. Pres
    - Convert obvious groups into semantic sections and add buttons/links only where the design implies an interaction. Do not guess business behavior; use a small toast, modal, or documented placeholder when no API exists.
    - Preserve the original 750-wide or equivalent design coordinate system and scale it with a responsive stage. Avoid fixed desktop-only widths.
 7. Validate the generated output:
-   - Run `scripts/validate_output.py <output-dir>`.
+   - Run `scripts/validate_output.py <output-dir>`. It must fail on fatal export errors or any effect-bearing `topil` fallback.
    - Start a local static server and capture screenshots at the design viewport and at least one narrow mobile viewport.
    - Compare screenshots with `preview.png`. Fix missing assets, incorrect z-order, crop offsets, font substitutions, and visible seams before delivery.
    - Use browser automation to exercise every generated interaction and check console/page errors.
+   - Before reporting completion, require all of these invariants: manifest asset policy is `visible-leaf-plus-group-effect-boundaries`; no ordinary group is an asset; effect layers have no fallback; group assets, if any, are explicitly marked `group-effect`; and every visible mismatch is traced to a specific PSD layer or effect. Do not create a new flattened component image during visual tuning.
 
 ## Command
 
@@ -105,3 +109,4 @@ Read [references/layer-conventions.md](references/layer-conventions.md) before n
 - Treat an alternate PSD as a full-canvas visual state by default. Do not assume a cropped dialog PSD can replace the base screen unless its composition mode and bounds are explicitly provided.
 - Keep descriptive user notes as guidance, but verify them against layer bounds and rendered pixels. Report conflicts instead of silently overriding evidence.
 - Never describe a build with missing PSD font files as complete. List the exact font names and expected `fonts/` paths, even when a raster fallback was generated.
+- Never fix a visual mismatch by exporting a larger parent group or component image. Preserve independent child assets, text layers, bounds, and interaction hotspots; only a PSD-authored group-level effect may justify a marked group-effect asset.

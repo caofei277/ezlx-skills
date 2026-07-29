@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from html import escape
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -23,16 +24,30 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("output", type=Path, help="New output directory")
     parser.add_argument("--include-hidden", action="store_true", help="Export hidden leaf layers too")
     parser.add_argument("--text-mode", choices=("raster", "semantic"), default="raster")
+    parser.add_argument("--allow-render-fallback", action="store_true", help="Allow effect-bearing layers to fall back to topil when composite rendering fails")
     parser.add_argument("--force", action="store_true", help="Allow overwriting generated files in an existing output directory")
     return parser.parse_args()
 
 
-def load_dependencies():
+def load_dependencies(require_composite: bool = True):
     try:
         from PIL import Image  # noqa: F401
         from psd_tools import PSDImage
     except ImportError as exc:
         fail("missing dependencies; run: python3 -m pip install psd-tools Pillow")
+    if require_composite:
+        missing = []
+        for name in ("scipy", "aggdraw", "skimage"):
+            try:
+                __import__(name)
+            except ImportError:
+                missing.append(name)
+        if missing:
+            fail(
+                "missing PSD composite dependencies: "
+                + ", ".join(missing)
+                + "; install with: python3 -m pip install 'psd-tools[composite]'"
+            )
     return PSDImage
 
 
@@ -104,29 +119,83 @@ def has_effects(layer: Any) -> bool:
         return False
 
 
+def effect_padding(layer: Any) -> int:
+    """Estimate the outward extent needed for effects that can exceed layer.bbox."""
+    maximum = 0.0
+    try:
+        for effect in getattr(layer, "effects", ()) or ():
+            name = type(effect).__name__
+            size = float(getattr(effect, "size", 0) or 0)
+            distance = float(getattr(effect, "distance", 0) or 0)
+            angle = math.radians(float(getattr(effect, "angle", 90) or 90))
+            if name in ("DropShadow", "OuterGlow", "Shadow"):
+                spread = size * 0.5 + 2.0
+                maximum = max(maximum, spread + max(abs(distance * math.cos(angle)), abs(distance * math.sin(angle))))
+    except Exception:
+        return 0
+    return int(math.ceil(maximum))
+
+
+def clamp_bounds(bounds: list[int], canvas_size: tuple[int, int]) -> list[int]:
+    width, height = canvas_size
+    return [
+        max(0, bounds[0]),
+        max(0, bounds[1]),
+        min(width, bounds[2]),
+        min(height, bounds[3]),
+    ]
+
+
+def effect_context_bounds(bounds: list[int], padding: int, canvas_size: tuple[int, int]) -> list[int]:
+    return clamp_bounds(
+        [bounds[0] - padding, bounds[1] - padding, bounds[2] + padding, bounds[3] + padding],
+        canvas_size,
+    )
+
+
 def walk_layers(node: Any, parent_visible: bool = True, path: tuple[str, ...] = ()) -> Iterable[tuple[Any, bool, tuple[str, ...]]]:
     for child in node:
         current_path = path + (str(getattr(child, "name", "layer")),)
         visible = parent_visible and bool(getattr(child, "visible", True))
         yield child, visible, current_path
-        # Render an effect-bearing group as one asset so inherited effects are
-        # preserved instead of being lost or duplicated across its children.
+        # A group with its own Photoshop effect is an explicit raster boundary;
+        # keep it as one effect asset. Ordinary groups remain structural.
         if getattr(child, "kind", None) == "group" and not has_effects(child):
             yield from walk_layers(child, visible, current_path)
 
 
-def render_layer(layer: Any):
+def render_layer(
+    layer: Any,
+    psd: Any,
+    canvas_size: tuple[int, int],
+    context_image: Any = None,
+    allow_render_fallback: bool = False,
+):
     composite_error = None
     try:
+        bounds = as_bounds(getattr(layer, "bbox", None))
+        padding = effect_padding(layer)
+        if padding and bounds and context_image is not None:
+            context_bounds = effect_context_bounds(bounds, padding, canvas_size)
+            original_bounds = clamp_bounds(bounds, canvas_size)
+            image = context_image.crop(tuple(context_bounds)).convert("RGBA")
+            isolated = layer.composite(viewport=tuple(original_bounds))
+            if isolated is not None:
+                isolated = isolated.convert("RGBA")
+                offset = (original_bounds[0] - context_bounds[0], original_bounds[1] - context_bounds[1])
+                image.paste(isolated, offset, isolated)
+            return image, "composite-context", composite_error, context_bounds
         image = layer.composite()
         if image is not None:
-            return image.convert("RGBA"), "composite", composite_error
+            return image.convert("RGBA"), "composite", composite_error, bounds
     except Exception as exc:
         composite_error = str(exc)
+        if has_effects(layer) and not allow_render_fallback:
+            raise RuntimeError(f"effect layer composite rendering failed: {composite_error}") from exc
     image = layer.topil()
     if image is None:
         raise RuntimeError("layer renderer returned no image")
-    return image.convert("RGBA"), "topil-fallback", composite_error
+    return image.convert("RGBA"), "topil-fallback", composite_error, as_bounds(getattr(layer, "bbox", None))
 
 
 def write_h5(output: Path, width: int, height: int, layers: list[dict[str, Any]], text_mode: str) -> None:
@@ -195,15 +264,26 @@ def main() -> None:
     assets_dir = output / "assets"
     assets_dir.mkdir(exist_ok=True)
 
-    PSDImage = load_dependencies()
+    PSDImage = load_dependencies(require_composite=not args.allow_render_fallback)
     try:
         psd = PSDImage.open(source)
     except Exception as exc:
         fail(f"could not open PSD: {exc}")
 
     width, height = map(int, psd.size)
-    layers: list[dict[str, Any]] = []
+    context_image = None
+    group_effects = [
+        {"name": str(getattr(layer, "name", "layer")), "path": list(path), "effects": [type(effect).__name__ for effect in getattr(layer, "effects", ()) or ()]}
+        for layer, visible, path in walk_layers(psd)
+        if visible and getattr(layer, "kind", None) == "group" and has_effects(layer)
+    ]
     errors: list[dict[str, Any]] = []
+    if any(effect_padding(layer) > 0 for layer, visible, _ in walk_layers(psd) if visible and getattr(layer, "kind", None) != "group"):
+        try:
+            context_image = psd.composite().convert("RGBA")
+        except Exception as exc:
+            errors.append({"name": "__composite_context__", "reason": str(exc), "fatal": True})
+    layers: list[dict[str, Any]] = []
     order = 0
     for layer, visible, path in walk_layers(psd):
         kind = str(getattr(layer, "kind", "unknown"))
@@ -226,7 +306,10 @@ def main() -> None:
             "opacity": int(getattr(layer, "opacity", 255) or 255),
             "rendered_opacity": True,
             "asset": f"assets/{filename}",
+            "asset_scope": "group-effect" if kind == "group" else "leaf",
         }
+        if kind == "group":
+            record["flatten_reason"] = "group-level-effect"
         try:
             record["blend_mode"] = str(getattr(layer, "blend_mode", "normal"))
         except Exception:
@@ -238,6 +321,7 @@ def main() -> None:
             record["effects"] = [type(effect).__name__ for effect in getattr(layer, "effects", ()) or ()]
         except Exception:
             record["effects"] = []
+        record["effect_padding"] = effect_padding(layer)
         text = layer_text(layer)
         if text is not None:
             record["text"] = text
@@ -251,21 +335,32 @@ def main() -> None:
                 record["letter_spacing"] = styles[0].get("letter_spacing", 0)
                 record["text_color"] = styles[0].get("color")
         try:
-            image, render_mode, render_warning = render_layer(layer)
+            image, render_mode, render_warning, rendered_bounds = render_layer(
+                layer,
+                psd,
+                (width, height),
+                context_image=context_image,
+                allow_render_fallback=args.allow_render_fallback,
+            )
+            if rendered_bounds:
+                record["bounds"] = rendered_bounds
             record["render_mode"] = render_mode
-            record["rendered_opacity"] = render_mode == "composite"
+            record["rendered_opacity"] = render_mode in ("composite", "composite-context")
             if render_warning:
                 record["render_warning"] = render_warning
+            if render_mode == "topil-fallback" and has_effects(layer):
+                record["effect_fallback"] = True
             image.save(asset_path, "PNG", optimize=True)
         except Exception as exc:
             record.pop("asset", None)
-            errors.append({"name": name, "kind": kind, "bounds": bounds, "reason": str(exc)})
+            errors.append({"name": name, "kind": kind, "bounds": bounds, "reason": str(exc), "fatal": has_effects(layer) and not args.allow_render_fallback})
             continue
         layers.append(record)
         order += 1
 
     try:
-        psd.composite().convert("RGBA").save(output / "preview.png", "PNG", optimize=True)
+        preview_image = context_image if context_image is not None else psd.composite().convert("RGBA")
+        preview_image.save(output / "preview.png", "PNG", optimize=True)
     except Exception as exc:
         errors.append({"name": "__composite__", "reason": str(exc)})
 
@@ -275,12 +370,20 @@ def main() -> None:
         "layer_count": len(layers),
         "text_layer_count": sum(1 for layer in layers if "text" in layer),
         "text_mode": args.text_mode,
+        "asset_policy": "visible-leaf-plus-group-effect-boundaries",
+        "composite_dependencies": not args.allow_render_fallback,
+        "effect_layer_count": sum(1 for layer in layers if layer.get("effects")),
+        "effect_fallback_count": sum(1 for layer in layers if layer.get("effect_fallback")),
+        "group_effect_count": len(group_effects),
+        "group_effects": group_effects,
         "layers": layers,
         "errors": errors,
     }
     (output / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     write_h5(output, width, height, layers, args.text_mode)
-    print(json.dumps({"canvas": [width, height], "exported_layers": len(layers), "text_layers": manifest["text_layer_count"], "errors": len(errors), "output": str(output)}, ensure_ascii=False))
+    print(json.dumps({"canvas": [width, height], "exported_layers": len(layers), "text_layers": manifest["text_layer_count"], "errors": len(errors), "effect_fallbacks": manifest["effect_fallback_count"], "output": str(output)}, ensure_ascii=False))
+    if any(error.get("fatal") for error in errors):
+        raise SystemExit(3)
 
 
 if __name__ == "__main__":
