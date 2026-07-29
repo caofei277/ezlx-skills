@@ -12,6 +12,7 @@ Convert one or more layered PSDs into a real asset-based H5 implementation. Pres
 1. Select the input mode:
    - One PSD: use direct mode and run `scripts/export_psd.py`.
    - Multiple screens or states: initialize a project with `scripts/init_project.py --psd <source.psd>` for every known PSD, or place PSDs under `psd/` and run `scripts/analyze_fonts.py flow.json --update` before asking the user to fill the flow. The generated `flow.json` must list every PSD font under `project.fonts` with a source path for the user to confirm.
+   - Do not hand-write a replacement minimal `flow.json`. `init_project.py` is the source of the template contract. When `--psd` is supplied, each input PSD must already appear as a real `screens[]` default entry, and the generated `_generatedBy`, `_guide`, `_examples`, `_instructions`, and `_fontAudit` metadata must be preserved while the user fills in descriptions and interactions.
 2. Inspect the source before editing the project:
    - Confirm the PSD/PSB path, canvas size, color mode, layer count, visible groups, visible leaf layers, and text layers.
    - Treat `psd-tools[composite]` as a required dependency for any PSD containing shape layers, vector masks, GradientOverlay, ColorOverlay, DropShadow, OuterGlow, or similar effects. The exporter must fail before silently losing those effects if the dependency is unavailable.
@@ -26,7 +27,7 @@ Convert one or more layered PSDs into a real asset-based H5 implementation. Pres
    - `index.html` and `styles.css`: a responsive absolute-coordinate H5 render using the exported assets.
    - For effect-bearing layers, inspect `effect_layer_count`, `effect_fallback_count`, `render_mode`, and `render_warning` in `manifest.json`. Effect layers must be `composite` or `composite-context`; `topil-fallback` is not an acceptable final result.
    - Enforce `asset_policy: "visible-leaf-plus-group-effect-boundaries"`. Never export a group, tabbar, menu, card, dialog, or other multi-layer UI block as one screenshot-like asset merely to fix a visual mismatch. A group asset is permitted only when the PSD itself has a group-level effect and the manifest records `asset_scope: "group-effect"` and `flatten_reason: "group-level-effect"`.
-5. For flow mode, model independent pages in `screens[]` and page-owned dialogs/drawers in `screens[].overlays[]`; do not ask users to set `states[].mode`. Use `transitions[].overlay` for same-page overlays and a different `to` screen ID for page navigation. Run `scripts/validate_flow.py flow.json` before exporting; it automatically adds discovered PSD font mappings, then run `scripts/build_flow.py flow.json` to generate the runtime.
+5. For flow mode, model independent pages in `screens[]` and page-owned dialogs/drawers in `screens[].overlays[]`; do not ask users to set `states[].mode`. Use `transitions[].overlay` for same-page overlays and a different `to` screen ID for page navigation. Run `scripts/analyze_fonts.py flow.json --update`, then `scripts/validate_flow.py flow.json --strict` before exporting; it automatically adds discovered PSD font mappings and rejects skeletal or placeholder flow files. Only after strict validation passes may `scripts/build_flow.py flow.json` generate the runtime. A flow that was manually reduced to `{project, screens, transitions}` is not an initialized project and must be regenerated with `init_project.py`.
    - Before exporting, run `scripts/analyze_fonts.py flow.json --update`. Report every `MISSING FONT MAPPING` and `MISSING FONT FILE` to the user by exact PSD font name and expected `fonts/` path. Keep `project.textMode` as `semantic`; do not change it to `raster` merely because the user has not supplied the fonts yet.
 6. Read `manifest.json` or `flow-build.json` and improve the generated H5:
    - Keep bitmap assets for complex artwork, effects, masks, logos, and icons when raster output is the most faithful representation.
@@ -71,13 +72,15 @@ python3 /path/to/psd-to-h5/scripts/init_project.py ./h5-project \
   --psd ./designs/home.psd --psd ./designs/home-share.psd
 ```
 
-After the user adds PSDs and edits `flow.json`, validate and build it:
+After the user adds PSDs and edits the generated `flow.json`, validate and build it:
 
 ```bash
 python3 /path/to/psd-to-h5/scripts/analyze_fonts.py ./h5-project/flow.json --update
 python3 /path/to/psd-to-h5/scripts/validate_flow.py ./h5-project/flow.json --strict
 python3 /path/to/psd-to-h5/scripts/build_flow.py ./h5-project/flow.json
 ```
+
+Strict validation requires the generated `_generatedBy`, `_guide`, `_examples`, `_instructions`, and `_fontAudit` fields. These are configuration documentation and audit records, not disposable comments. If a flow was created manually or those fields were deleted, rerun `init_project.py` with the actual PSD paths and then reapply only the user's page descriptions, overlays, elements, and transitions.
 
 `analyze_fonts.py` reads font names from PSD text layers, adds a suggested `project.fonts` mapping for newly discovered names, and reports the source file each user must place in `fonts/`. The audit never checks the operating system font directory. `project.fonts.<name>.file` is the source of truth; `.otf` and `.ttf` are both opened from that path even if the auxiliary `format` value is stale. `validate_flow.py --strict` also adds mappings automatically and treats missing source files as errors. `build_flow.py` adds mappings as a final guard, prints the missing font list, writes it to `output/font-audit.json`, and exits with code 3 unless `--allow-missing-fonts` is explicitly used. Never report a build with missing fonts as complete.
 

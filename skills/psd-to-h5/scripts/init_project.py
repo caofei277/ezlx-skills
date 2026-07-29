@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -14,6 +15,23 @@ from font_audit import audit_project_fonts, scan_psd_paths, suggested_mapping
 def fail(message: str) -> None:
     print(f"[psd-to-h5] error: {message}", file=sys.stderr)
     raise SystemExit(2)
+
+
+def flow_path_for(source: Path, root: Path) -> str:
+    """Store a PSD path relative to flow.json, even when it lives outside root."""
+    return Path(os.path.relpath(source.expanduser().resolve(), root)).as_posix()
+
+
+def screen_id_for(source: Path, used: set[str]) -> str:
+    """Use the PSD filename as a useful initial page id and keep ids unique."""
+    base = source.stem.strip() or "页面"
+    candidate = base
+    index = 2
+    while candidate in used:
+        candidate = f"{base}-{index}"
+        index += 1
+    used.add(candidate)
+    return candidate
 
 
 def main() -> None:
@@ -44,28 +62,7 @@ def main() -> None:
             "textMode": "semantic",
             "fonts": {},
         },
-        "screens": [
-            {
-                "id": "请替换页面",
-                "default": "psd/页面默认.psd",
-                "description": "请描述这个页面的用途、主要内容和用户目标。",
-                "elements": [
-                    {
-                        "id": "请替换交互元素",
-                        "layer": "图层名称，或直接填写 bounds",
-                        "description": "请描述用户点击的位置、触发原因和预期结果。",
-                        "action": "请填写对应的页面跳转或状态变化",
-                    }
-                ],
-                "overlays": [
-                    {
-                        "id": "请替换弹层",
-                        "psd": "psd/页面弹层.psd",
-                        "description": "请描述这个弹层相对于默认页面发生了什么变化。",
-                    }
-                ],
-            }
-        ],
+        "screens": [],
         "transitions": [
             {
                 "from": "请替换页面",
@@ -75,6 +72,7 @@ def main() -> None:
                 "description": "请用中文描述这次点击、弹窗或页面跳转。",
             }
         ],
+        "_generatedBy": "psd-to-h5/init_project.py",
         "_guide": {
             "version": {"作用": "协议版本，保持为 1。", "示例": 1},
             "project": {"作用": "整个 H5 项目的公共配置。", "示例": "project 对象"},
@@ -128,6 +126,46 @@ def main() -> None:
             "填写完成后对 AI 说“开始”，即可执行切图、组装和浏览器校验。",
         ],
     }
+    used_ids: set[str] = set()
+    if args.psd:
+        # Real PSD inputs are already registered as screens; leave interactions
+        # empty until the user describes them instead of retaining fake routes.
+        flow["transitions"] = []
+        for raw_path in args.psd:
+            source = Path(raw_path).expanduser().resolve()
+            screen_id = screen_id_for(source, used_ids)
+            flow["screens"].append(
+                {
+                    "id": screen_id,
+                    "default": flow_path_for(source, root),
+                    "description": f"由 {source.name} 初始化的独立页面；请补充页面用途、用户目标和交互说明。",
+                    "elements": [],
+                    "overlays": [],
+                }
+            )
+    else:
+        flow["screens"] = [
+            {
+                "id": "请替换页面",
+                "default": "psd/页面默认.psd",
+                "description": "请描述这个页面的用途、主要内容和用户目标。",
+                "elements": [
+                    {
+                        "id": "请替换交互元素",
+                        "layer": "图层名称，或直接填写 bounds",
+                        "description": "请描述用户点击的位置、触发原因和预期结果。",
+                        "action": "请填写对应的页面跳转或状态变化",
+                    }
+                ],
+                "overlays": [
+                    {
+                        "id": "请替换弹层",
+                        "psd": "psd/页面弹层.psd",
+                        "description": "请描述这个弹层相对于默认页面发生了什么变化。",
+                    }
+                ],
+            }
+        ]
     if args.psd:
         scan = scan_psd_paths((Path(item) for item in args.psd), root)
         project = flow["project"]
@@ -140,6 +178,14 @@ def main() -> None:
             "missingMapping": audit["missing_mapping"],
             "missingSource": audit["missing_source"],
             "scanErrors": scan["errors"],
+        }
+    else:
+        flow["_fontAudit"] = {
+            "说明": "初始化时尚未提供 PSD；填写 screens[].default 和 overlays[].psd 后运行 analyze_fonts.py flow.json --update。",
+            "required": [],
+            "missingMapping": [],
+            "missingSource": [],
+            "scanErrors": [],
         }
     (root / "flow.json").write_text(json.dumps(flow, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"project": str(root), "flow": str(root / "flow.json")}, ensure_ascii=False))

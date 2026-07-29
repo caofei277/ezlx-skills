@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from font_audit import audit_project_fonts, flow_psd_paths, scan_psd_paths, suggested_mapping
+from validate_flow import validate_generated_contract
 
 
 def fail(message: str) -> None:
@@ -137,6 +138,11 @@ def load_flow(path: Path) -> dict[str, Any]:
         fail(f"cannot read flow.json: {exc}")
     if not isinstance(data, dict) or data.get("version") != 1:
         fail("flow.json must be an object with version=1")
+    contract_errors: list[str] = []
+    contract_warnings: list[str] = []
+    validate_generated_contract(data, contract_errors, contract_warnings, True)
+    if contract_errors:
+        fail("invalid flow.json initialization contract: " + "; ".join(contract_errors))
     return data
 
 
