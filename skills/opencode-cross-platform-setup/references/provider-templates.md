@@ -31,7 +31,7 @@
 | 模型 ID | 名称 | Context | Output | Thinking | 输入模态 |
 |---------|------|---------|--------|----------|---------|
 | `opencode-go/glm-5` | GLM-5 | 200K | 128K | enabled | text |
-| `opencode-go/glm-5.1` | GLM-5.1 | 200K | 128K | enabled | text |
+| `opencode-go/glm-5.2` | GLM-5.2 | 1M | 128K | enabled | text |
 | `opencode-go/kimi-k2.5` | Kimi K2.5 | 256K | 32K | enabled | text, image |
 | `opencode-go/kimi-k2.6` | Kimi K2.6 | 256K | 96K | enabled | text, image |
 | `opencode-go/mimo-v2.5` | MiMo-V2.5 | 256K* | 32K* | enabled | text |
@@ -68,11 +68,13 @@ opencode → /connect → 选择 "OpenCode Go" → 输入 API Key → /models �
 - **获取地址**: https://open.bigmodel.cn → Coding Plan 套餐 → API Key 管理
 - **密钥格式**: `{API_KEY}.{SECRET_KEY}`（两部分组成）
 
+> **GLM-5.2 说明**：1M 上下文，128K 最大输出（配置中使用 131072）。Provider 文档可能滞后，使用当前可用的提供商模型 ID。GLM-5.2 和 GLM-5-Turbo 为高阶模型，高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍额度。
+
 ### 可用模型
 
 | 模型 ID | 名称 | context | output | thinking | 输入模态 |
 |---------|------|---------|--------|----------|---------|
-| `glm-5.2` | GLM-5.2 | 200000 | 128000 | enabled (8192) | text |
+| `glm-5.2` | GLM-5.2 | 1000000 | 131072 | enabled (8192) | text |
 | `glm-5-turbo` | GLM-5 Turbo | 200000 | 128000 | 无 | text |
 | `glm-4.7` | GLM-4.7 | 200000 | 128000 | enabled (8192) | text |
 | `glm-4.5-air` | GLM-4.5-Air | 200000 | 128000 | 无 | text |
@@ -93,7 +95,7 @@ opencode → /connect → 选择 "OpenCode Go" → 输入 API Key → /models �
         "name": "GLM-5.2",
         "modalities": { "input": ["text"], "output": ["text"] },
         "options": { "thinking": { "type": "enabled", "budgetTokens": 8192 } },
-        "limit": { "context": 200000, "output": 128000 }
+        "limit": { "context": 1000000, "output": 131072 }
       },
       "glm-5-turbo": {
         "name": "GLM-5 Turbo",
@@ -218,6 +220,8 @@ opencode → /connect → 选择 "OpenCode Go" → 输入 API Key → /models �
 - **获取地址**: https://console.volcengine.com/coding_plan → 套餐 → API Key 管理
 - **注意**: 请勿使用 `https://ark.cn-beijing.volces.com/api/v3` 作为 baseURL，该地址不会消耗 Coding Plan 额度，会产生额外费用
 
+> **GLM-5.2 说明**：1M 上下文，128K 最大输出（配置中使用 131072）。Provider 文档可能滞后，使用当前可用的提供商模型 ID。GLM-5.2 和 GLM-5-Turbo 为高阶模型，高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍额度。
+
 ### 模型配置说明
 
 火山方舟支持两种方式配置模型：
@@ -238,7 +242,7 @@ opencode → /connect → 选择 "OpenCode Go" → 输入 API Key → /models �
 | `doubao-seed-2.0-lite` | 豆包 Seed 2.0 Lite | 256000 | 4096 | 无 | text, image |
 | `deepseek-v4-flash` | DeepSeek V4 Flash | 1024000 | 4096 | 无 | text |
 | `deepseek-v4-pro` | DeepSeek V4 Pro | 1024000 | 4096 | 无 | text |
-| `glm-5.1` | GLM-5.1 | 200000 | 4096 | 无 | text |
+| `glm-5.2` | GLM-5.2 | 1000000 | 131072 | enabled (8192) | text |
 | `minimax-m2.7` | MiniMax M2.7 | 200000 | 4096 | 无 | text |
 | `minimax-m3` | MiniMax M3 | 512000 | 4096 | 无 | text, image |
 | `kimi-k2.6` | Kimi K2.6 | 256000 | 4096 | 无 | text, image |
@@ -288,9 +292,9 @@ opencode → /connect → 选择 "OpenCode Go" → 输入 API Key → /models �
         "name": "deepseek-v4-pro",
         "limit": { "context": 1024000, "output": 4096 }
       },
-      "glm-5.1": {
-        "name": "glm-5.1",
-        "limit": { "context": 200000, "output": 4096 },
+      "glm-5.2": {
+        "name": "glm-5.2",
+        "limit": { "context": 1000000, "output": 131072 },
         "modalities": { "input": ["text"], "output": ["text"] }
       },
       "minimax-m2.7": {

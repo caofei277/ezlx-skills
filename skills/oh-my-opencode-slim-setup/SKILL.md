@@ -14,7 +14,7 @@ metadata:
 
 ## 何时使用
 
-- 用户希望 AI Agent 自动按任务类型分配不同模型（Oracle 用 GLM-5.1 高阶推理、Explorer 用 DeepSeek Free 快速浏览）
+- 用户希望 AI Agent 自动按任务类型分配不同模型（Oracle 用 GLM-5.2 高阶推理、Explorer 用 DeepSeek Free 快速浏览）
 - 用户已配置智谱 Coding Plan Provider，并使用 OpenCode Zen 免费模型
 - 用户想使用 Council 功能（多模型并行讨论、合成共识答案）
 - 用户想尝试 oh-my-opencode-slim 但不确定是否适合，希望可以无损回退
@@ -70,7 +70,7 @@ OmO-slim 采用分级智能体策略，免费做杂活、1倍做主力、高阶�
 |------|-------|------|------|------|------|---------|
 | T0 免费 | Explorer, Librarian, Designer | Subagent | deepseek-v4-flash-free | Zen | **免费** | 搜索、查档、UI |
 | T1 主力 | Fixer | Subagent | glm-4.7 (low) | 智谱 | 1倍 | 日常写代码 |
-| T2 高阶 | Oracle | Subagent | glm-5.1 (high) | 智谱 | ⚠️3倍/2倍 | 深度推理 |
+| T2 高阶 | Oracle | Subagent | glm-5.2 (high) | 智谱 | ⚠️3倍/2倍 | 深度推理 |
 | T3 共识 | Council | Primary | glm-5-turbo (high) | 智谱 | 中 | 多模型共识 |
 | T0~T3 | Orchestrator | Primary | 按Preset切换 | Zen/智谱 | 免费~高 | 主编排 |
 
@@ -81,12 +81,12 @@ OmO-slim 采用分级智能体策略，免费做杂活、1倍做主力、高阶�
 | zen-free（默认） | deepseek-v4-flash-free | **免费** | 先试试免费编排 |
 | zhipu-std | glm-4.7 | 低（1倍） | 免费委派不准时 |
 | zhipu-fast | glm-5-turbo | 中 | 需要更快更好 |
-| zhipu-full | glm-5.1 | 高 | 要求最高 |
+| zhipu-full | glm-5.2 | 高 | 要求最高 |
 
 **核心原则**：
 - **免费做杂活**：Explorer/Librarian/Designer 用 deepseek-free，零成本
 - **1倍做主力**：Fixer 用 glm-4.7 写日常代码
-- **高阶做重活**：Oracle 用 glm-5.1 只在深度推理时用
+- **高阶做重活**：Oracle 用 glm-5.2 只在深度推理时用
 - **按需升编排**：Orchestrator 从免费开始，/preset 一键升级
 - **Observer 已禁用**：无免费多模态模型，等有可用模型再启用
 - **Council 慎用**：多模型并行消耗高，需通过 Tab 切换到 Council 或 `@council` 调用
@@ -117,7 +117,7 @@ bun --version
 
 > OpenCode Zen 提供 **免费** 的 DeepSeek V4 Flash Free，provider 前缀为 `opencode/`。无需额外配置，OpenCode 安装即可使用。
 >
-> **智谱成本提醒**：GLM-5.1 高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍。GLM-4.7 固定 1 倍消耗。Orchestrator 默认用免费模型，按需升级。
+> **智谱成本提醒**：GLM-5.2 高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍。GLM-4.7 固定 1 倍消耗。Orchestrator 默认用免费模型，按需升级。
 
 **判据**：已确认 OpenCode 版本、bun 版本、用户已有的 Provider 列表。
 
@@ -175,7 +175,7 @@ bunx oh-my-opencode-slim@latest doctor
 关键规则：
 - 生成 4 套 Preset（zen-free / zhipu-std / zhipu-fast / zhipu-full），只有 Orchestrator 模型不同
 - Explorer/Librarian/Designer 用免费模型（deepseek-v4-flash-free）
-- Oracle 用高阶模型（glm-5.1, variant: high）
+- Oracle 用高阶模型（glm-5.2, variant: high）
 - Fixer 用主力模型（glm-4.7, variant: low）
 - Council 用快速模型（glm-5-turbo, variant: high）
 - Observer 默认禁用（`disabled_agents: ["observer"]`）

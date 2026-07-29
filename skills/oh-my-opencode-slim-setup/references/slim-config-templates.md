@@ -13,9 +13,9 @@
 | T0 (免费) | DeepSeek V4 Flash Free | OpenCode Zen | **免费** | Explorer, Librarian, Designer, Orchestrator（默认） |
 | T1 (主力) | GLM-4.7 | 智谱 | 1倍 | Fixer, Orchestrator（zhipu-std） |
 | T2 (快速) | GLM-5-Turbo | 智谱 | 中 | Council, Orchestrator（zhipu-fast） |
-| T3 (高阶) | GLM-5.1 | 智谱 | ⚠️高峰3倍/非高峰2倍 | Oracle, Orchestrator（zhipu-full） |
+| T3 (高阶) | GLM-5.2 | 智谱 | ⚠️高峰3倍/非高峰2倍 | Oracle, Orchestrator（zhipu-full） |
 
-> **智谱成本提醒**：GLM-5.1 高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍。GLM-4.7 固定 1 倍消耗。Orchestrator 默认用免费模型，按需 `/preset` 升级。
+> **智谱成本提醒**：GLM-5.2 高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍。GLM-4.7 固定 1 倍消耗。Orchestrator 默认用免费模型，按需 `/preset` 升级。
 
 ---
 
@@ -37,7 +37,7 @@
         "mcps": ["*", "!context7"]
       },
       "oracle": {
-        "model": "zhipu-coding-plan/glm-5.1",
+        "model": "zhipu-coding-plan/glm-5.2",
         "variant": "high",
         "skills": ["simplify"],
         "mcps": []
@@ -91,7 +91,7 @@
     },
     "zhipu-full": {
       "orchestrator": {
-        "model": "zhipu-coding-plan/glm-5.1",
+        "model": "zhipu-coding-plan/glm-5.2",
         "skills": ["*"],
         "mcps": ["*", "!context7"]
       }
@@ -106,7 +106,7 @@
     "presets": {
       "balanced": {
         "alpha": {
-          "model": "zhipu-coding-plan/glm-5.1",
+          "model": "zhipu-coding-plan/glm-5.2",
           "prompt": "Focus on correctness and edge cases."
         },
         "beta": {
@@ -130,7 +130,7 @@
 | `zen-free` | deepseek-free（免费） | 全部相同 | 默认，先试试 |
 | `zhipu-std` | glm-4.7（1倍） | 全部相同 | 免费委派不准 |
 | `zhipu-fast` | glm-5-turbo（中等） | 全部相同 | std 还不够 |
-| `zhipu-full` | glm-5.1（高） | 全部相同 | 要求最高 |
+| `zhipu-full` | glm-5.2（高） | 全部相同 | 要求最高 |
 
 ### 切换命令
 
@@ -152,16 +152,16 @@
 | T1.5 (前端) | Qwen 3.6 Plus | OpenCode Go | Go额度 | Designer |
 | T2 (降级) | DeepSeek V4 Flash/Pro | OpenCode Go | Go额度 | 备选 |
 | T2.5 (多模态) | Kimi K2.6 | OpenCode Go | Go额度 | Observer |
-| T3 (高阶) | GLM-5.1 | 智谱 Pro | ⚠️高峰3倍/非高峰2倍 | Orchestrator, Oracle |
+| T3 (高阶) | GLM-5.2 | 智谱 Pro | ⚠️高峰3倍/非高峰2倍 | Orchestrator, Oracle |
 | T3.5 (共识) | Council 配置驱动 | 多平台 | 高（多模型并行） | Council |
 
-> **智谱 Pro 成本提醒**：GLM-5.1 高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍。GLM-4.7 固定 1 倍消耗。日常开发优先使用 GLM-4.7 和 DeepSeek Free。
+> **智谱 Pro 成本提醒**：GLM-5.2 高峰期（14:00-18:00 UTC+8）消耗 3 倍额度，非高峰期消耗 2 倍。GLM-4.7 固定 1 倍消耗。日常开发优先使用 GLM-4.7 和 DeepSeek Free。
 
 ---
 
 ## 模板零：三平台版（OpenCode Zen + OpenCode Go + 智谱 Pro）
 
-> 适合同时拥有 OpenCode Go 和 智谱 Pro 的用户。**推荐配置：Orchestrator/Oracle 用 GLM-5.1，Explorer/Librarian 用 DeepSeek Free，Designer 用 Qwen，Fixer 用 GLM-4.7。**
+> 适合同时拥有 OpenCode Go 和 智谱 Pro 的用户。**推荐配置：Orchestrator/Oracle 用 GLM-5.2，Explorer/Librarian 用 DeepSeek Free，Designer 用 Qwen，Fixer 用 GLM-4.7。**
 
 ```jsonc
 {
@@ -176,14 +176,14 @@
       // ===== 高阶 Agent =====
       // Orchestrator: 主协调者，使用最高阶模型
       "orchestrator": {
-        "model": "zhipu-coding-plan/glm-5.1",
+        "model": "zhipu-coding-plan/glm-5.2",
         "skills": ["*"],  // 所有技能
         "mcps": ["*", "!context7"]  // 所有 MCP，排除 context7
       },
 
       // Oracle: 架构咨询、深度调试，使用高阶模型 + high variant
       "oracle": {
-        "model": "zhipu-coding-plan/glm-5.1",
+        "model": "zhipu-coding-plan/glm-5.2",
         "variant": "high",  // 高推理强度
         "skills": ["simplify"],  // 代码简化技能
         "mcps": []  // 无 MCP，专注代码分析
@@ -249,7 +249,7 @@
       // 平衡预设：三个不同平台的模型
       "balanced": {
         "alpha": {
-          "model": "zhipu-coding-plan/glm-5.1",
+          "model": "zhipu-coding-plan/glm-5.2",
           "prompt": "Focus on correctness and edge cases."
         },
         "beta": {
@@ -264,7 +264,7 @@
       // 深度预设：两个高阶模型对比
       "deep": {
         "primary": {
-          "model": "zhipu-coding-plan/glm-5.1",
+          "model": "zhipu-coding-plan/glm-5.2",
           "prompt": "Provide the primary recommendation."
         },
         "reviewer": {
@@ -318,7 +318,7 @@
     "go-only": {
       // Orchestrator: 使用 OpenCode Go 最高阶模型
       "orchestrator": {
-        "model": "opencode-go/glm-5.1",
+        "model": "opencode-go/glm-5.2",
         "skills": ["*"],
         "mcps": ["*", "!context7"]
       },
@@ -384,7 +384,7 @@
     "presets": {
       "go-council": {
         "alpha": {
-          "model": "opencode-go/glm-5.1",
+          "model": "opencode-go/glm-5.2",
           "prompt": "Focus on correctness."
         },
         "beta": {
@@ -488,8 +488,8 @@
 
 | Agent | 推荐模型 | 平台 | 成本 | 说明 |
 |-------|---------|------|------|------|
-| Orchestrator | GLM-5.1 | 智谱 | ⚠️高 | 主协调者，需要强推理和判断 |
-| Oracle | GLM-5.1 (high) | 智谱 | ⚠️高 | 架构咨询，需要深度分析 |
+| Orchestrator | GLM-5.2 | 智谱 | ⚠️高 | 主协调者，需要强推理和判断 |
+| Oracle | GLM-5.2 (high) | 智谱 | ⚠️高 | 架构咨询，需要深度分析 |
 | Council | GLM-5-Turbo (high) | 智谱 | ⚠️高 | 多模型合成，需要强总结能力 |
 | Librarian | DeepSeek Free | Zen | 免费 | 文档搜索，速度比推理更重要 |
 | Explorer | DeepSeek Free | Zen | 免费 | 代码侦察，速度比推理更重要 |
@@ -535,7 +535,7 @@
     // 现有预设...
     "my-custom": {
       "orchestrator": {
-        "model": "opencode-go/glm-5.1",
+        "model": "opencode-go/glm-5.2",
         "skills": ["codemap", "clonedeps"],  // 仅这两个技能
         "mcps": ["grep_app"]  // 仅代码搜索 MCP
       },
@@ -571,7 +571,7 @@
     "councillor_execution_mode": "serial",
     "presets": {
       "single": {
-        "main": { "model": "zhipu-coding-plan/glm-5.1" }
+        "main": { "model": "zhipu-coding-plan/glm-5.2" }
       }
     }
   }
@@ -586,7 +586,7 @@
     "councillor_execution_mode": "parallel",
     "presets": {
       "balanced": {
-        "alpha": { "model": "zhipu-coding-plan/glm-5.1" },
+        "alpha": { "model": "zhipu-coding-plan/glm-5.2" },
         "beta": { "model": "opencode-go/deepseek-v4-pro" },
         "gamma": { "model": "opencode-go/qwen3.6-plus" }
       }
@@ -603,7 +603,7 @@
     "presets": {
       "review-board": {
         "reviewer": {
-          "model": "zhipu-coding-plan/glm-5.1",
+          "model": "zhipu-coding-plan/glm-5.2",
           "prompt": "Focus on bugs, edge cases, and failure modes."
         },
         "architect": {
