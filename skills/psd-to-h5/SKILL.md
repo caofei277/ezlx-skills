@@ -23,12 +23,12 @@ Convert one or more layered PSDs into a real asset-based H5 implementation. Pres
    - `manifest.json`: canvas metadata, layer names, types, bounds, opacity, z-order, text content, and export errors;
    - `preview.png`: flattened PSD preview for comparison only;
    - `index.html` and `styles.css`: a responsive absolute-coordinate H5 render using the exported assets.
-5. For flow mode, model independent pages in `screens[]` and page-owned dialogs/drawers in `screens[].overlays[]`; do not ask users to set `states[].mode`. Use `transitions[].overlay` for same-page overlays and a different `to` screen ID for page navigation. Run `scripts/validate_flow.py flow.json` before exporting, then run `scripts/build_flow.py flow.json` to generate the runtime.
-   - Before exporting, run `scripts/analyze_fonts.py flow.json --update`. Report every `MISSING FONT MAPPING` and `MISSING FONT FILE` to the user by exact PSD font name and expected `fonts/` path. Do not silently continue as if a system font satisfies the requirement.
+5. For flow mode, model independent pages in `screens[]` and page-owned dialogs/drawers in `screens[].overlays[]`; do not ask users to set `states[].mode`. Use `transitions[].overlay` for same-page overlays and a different `to` screen ID for page navigation. Run `scripts/validate_flow.py flow.json` before exporting; it automatically adds discovered PSD font mappings, then run `scripts/build_flow.py flow.json` to generate the runtime.
+   - Before exporting, run `scripts/analyze_fonts.py flow.json --update`. Report every `MISSING FONT MAPPING` and `MISSING FONT FILE` to the user by exact PSD font name and expected `fonts/` path. Keep `project.textMode` as `semantic`; do not change it to `raster` merely because the user has not supplied the fonts yet.
 6. Read `manifest.json` or `flow-build.json` and improve the generated H5:
    - Keep bitmap assets for complex artwork, effects, masks, logos, and icons when raster output is the most faithful representation.
    - Replace simple text-layer PNGs with HTML text only when the font, weight, line height, color, and letter spacing can be identified reliably. Keep the raster export as a fallback during visual comparison.
-   - For `project.textMode: "semantic"`, subset configured TTF/OTF files to `WOFF2` plus `WOFF` using the characters present in PSD text layers, emit `@font-face`, and fall back to raster text while any required font is missing.
+   - For `project.textMode: "semantic"`, subset configured TTF/OTF files to `WOFF2` plus `WOFF` using the characters present in PSD text layers and emit `@font-face`. Missing fonts are a blocking input error; use raster fallback only with the explicit `--allow-missing-fonts` emergency option and report that the project is incomplete.
    - Convert obvious groups into semantic sections and add buttons/links only where the design implies an interaction. Do not guess business behavior; use a small toast, modal, or documented placeholder when no API exists.
    - Preserve the original 750-wide or equivalent design coordinate system and scale it with a responsive stage. Avoid fixed desktop-only widths.
 7. Validate the generated output:
@@ -75,7 +75,7 @@ python3 /path/to/psd-to-h5/scripts/validate_flow.py ./h5-project/flow.json --str
 python3 /path/to/psd-to-h5/scripts/build_flow.py ./h5-project/flow.json
 ```
 
-`analyze_fonts.py` reads font names from PSD text layers, adds a suggested `project.fonts` mapping for newly discovered names, and reports the source file each user must place in `fonts/`. The audit never checks the operating system font directory. `validate_flow.py --strict` treats missing mappings and missing source files as errors; `build_flow.py` still emits a raster-text fallback but prints the missing font list and writes it to `output/font-audit.json`.
+`analyze_fonts.py` reads font names from PSD text layers, adds a suggested `project.fonts` mapping for newly discovered names, and reports the source file each user must place in `fonts/`. The audit never checks the operating system font directory. `validate_flow.py --strict` also adds mappings automatically and treats missing source files as errors. `build_flow.py` adds mappings as a final guard, prints the missing font list, writes it to `output/font-audit.json`, and exits with code 3 unless `--allow-missing-fonts` is explicitly used. Never report a build with missing fonts as complete.
 
 Use `--force` only when the user explicitly asks to regenerate an existing output:
 
@@ -104,3 +104,4 @@ Read [references/layer-conventions.md](references/layer-conventions.md) before n
 - Do not infer transitions from a screenshot alone when the user has not described the intended action. Mark ambiguous targets for confirmation.
 - Treat an alternate PSD as a full-canvas visual state by default. Do not assume a cropped dialog PSD can replace the base screen unless its composition mode and bounds are explicitly provided.
 - Keep descriptive user notes as guidance, but verify them against layer bounds and rendered pixels. Report conflicts instead of silently overriding evidence.
+- Never describe a build with missing PSD font files as complete. List the exact font names and expected `fonts/` paths, even when a raster fallback was generated.

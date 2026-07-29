@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a PSD-to-H5 flow.json without modifying the project."""
+"""Validate a PSD-to-H5 flow.json and populate required PSD font mappings."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from font_audit import audit_project_fonts, flow_psd_paths, scan_psd_paths
+from font_audit import audit_project_fonts, flow_psd_paths, scan_psd_paths, suggested_mapping
 
 
 def issue(message: str, errors: list[str], warnings: list[str], strict: bool = False) -> None:
@@ -77,6 +77,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("flow", type=Path)
     parser.add_argument("--strict", action="store_true", help="Treat missing PSD files as errors")
+    parser.add_argument("--no-update-fonts", action="store_true", help="Do not add newly discovered PSD font mappings to flow.json")
     args = parser.parse_args()
     flow_path = args.flow.expanduser().resolve()
     try:
@@ -169,6 +170,24 @@ def main() -> int:
     if existing_psd_paths:
         try:
             font_scan = scan_psd_paths(existing_psd_paths, base_dir)
+            configured = project.setdefault("fonts", {})
+            added_fonts: list[str] = []
+            if isinstance(configured, dict) and not args.no_update_fonts:
+                for item in font_scan["required"]:
+                    name = item["name"]
+                    if name not in configured:
+                        configured[name] = suggested_mapping(name)
+                        added_fonts.append(name)
+                if added_fonts:
+                    data["_fontAudit"] = {
+                        "说明": "由 validate_flow.py 根据 PSD 文本图层自动补齐；用户必须把对应 TTF/OTF 放入 fonts/ 并确认 project.fonts 路径。",
+                        "required": font_scan["required"],
+                        "missingMapping": [],
+                        "missingSource": [],
+                        "scanErrors": font_scan["errors"],
+                    }
+                    flow_path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                    print(f"font mappings added to flow.json: {', '.join(added_fonts)}")
             font_audit = audit_project_fonts(font_scan["required"], project, base_dir)
             for item in font_scan["errors"]:
                 issue(f"font scan failed for {item['psd']}: {item['reason']}", errors, warnings, args.strict)

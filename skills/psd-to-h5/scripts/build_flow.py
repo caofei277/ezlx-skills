@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from font_audit import audit_project_fonts, flow_psd_paths, scan_psd_paths
+from font_audit import audit_project_fonts, flow_psd_paths, scan_psd_paths, suggested_mapping
 
 
 def fail(message: str) -> None:
@@ -138,6 +138,38 @@ def load_flow(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict) or data.get("version") != 1:
         fail("flow.json must be an object with version=1")
     return data
+
+
+def prepare_font_config(flow_path: Path, data: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any], list[str]]:
+    """Discover PSD fonts and persist suggested mappings before any build work."""
+    project = data.setdefault("project", {})
+    if not isinstance(project, dict):
+        fail("project must be an object")
+    configured = project.setdefault("fonts", {})
+    if not isinstance(configured, dict):
+        fail("project.fonts must be an object")
+    psd_paths = [path for path in flow_psd_paths(data, flow_path.parent) if path.is_file()]
+    try:
+        scan = scan_psd_paths(psd_paths, flow_path.parent)
+    except RuntimeError as exc:
+        fail(str(exc))
+    added: list[str] = []
+    for item in scan["required"]:
+        name = item["name"]
+        if name not in configured:
+            configured[name] = suggested_mapping(name)
+            added.append(name)
+    audit = audit_project_fonts(scan["required"], project, flow_path.parent)
+    if added:
+        data["_fontAudit"] = {
+            "说明": "由 build_flow.py 根据 PSD 文本图层自动补齐；用户必须把对应 TTF/OTF 放入 fonts/ 并确认 project.fonts 路径。",
+            "required": scan["required"],
+            "missingMapping": audit["missing_mapping"],
+            "missingSource": audit["missing_source"],
+            "scanErrors": scan["errors"],
+        }
+        flow_path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return scan, audit, added
 
 
 def write_runtime(output: Path, runtime: dict[str, Any]) -> None:
@@ -270,9 +302,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("flow", type=Path)
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--allow-missing-fonts", action="store_true", help="Allow raster fallback; use only when the user explicitly accepts missing PSD fonts")
     args = parser.parse_args()
     flow_path = args.flow.expanduser().resolve()
     data = load_flow(flow_path)
+    font_scan, source_audit, added_fonts = prepare_font_config(flow_path, data)
+    if added_fonts:
+        print("[psd-to-h5] flow.json updated with required PSD font mappings:", file=sys.stderr)
+        for name in added_fonts:
+            print(f"  - {name}: {data['project']['fonts'][name]['file']}", file=sys.stderr)
     project = data.get("project", {})
     output = (flow_path.parent / project.get("outputDir", "output")).resolve()
     if output.exists() and any(output.iterdir()) and not args.force:
@@ -340,9 +378,6 @@ def main() -> None:
     runtime["fonts"] = font_result["fonts"]
     runtime["font_audit"] = font_result["audit"]
     try:
-        all_psd_paths = [path for path in flow_psd_paths(data, flow_path.parent) if path.is_file()]
-        font_scan = scan_psd_paths(all_psd_paths, flow_path.parent)
-        source_audit = audit_project_fonts(font_scan["required"], project, flow_path.parent)
         runtime["font_audit"]["psd_required"] = font_scan["required"]
         runtime["font_audit"]["missing_mapping"] = source_audit["missing_mapping"]
         runtime["font_audit"]["missing_source"] = source_audit["missing_source"]
@@ -378,19 +413,24 @@ def main() -> None:
     write_runtime(output, runtime)
     font_gaps = [item["name"] for item in runtime["font_audit"].get("missing_mapping", [])]
     font_gaps += [item["name"] for item in runtime["font_audit"].get("missing_source", [])]
-    if font_gaps:
+    font_build_errors = [item["name"] for item in runtime["font_audit"].get("compression_errors", []) if item.get("name")]
+    font_failures = sorted(set(font_gaps + font_build_errors))
+    if font_failures:
         print("[psd-to-h5] FONT INPUT REQUIRED: provide these PSD fonts in project.fonts and fonts/:", file=sys.stderr)
-        for name in sorted(set(font_gaps)):
+        for name in font_failures:
             print(f"  - {name}", file=sys.stderr)
     print(json.dumps({
         "output": str(output),
         "states": len(runtime["states"]),
         "transitions": len(runtime["transitions"]),
         "text_mode": runtime["text_mode"],
-        "missing_fonts": sorted(set(font_gaps)),
+        "missing_fonts": font_failures,
         "missing_font_mappings": runtime["font_audit"].get("unconfigured", []),
         "font_compression_errors": runtime["font_audit"].get("compression_errors", []),
     }, ensure_ascii=False))
+    if font_failures and not args.allow_missing_fonts:
+        print("[psd-to-h5] build stopped: provide the listed font files, then run build_flow.py again.", file=sys.stderr)
+        raise SystemExit(3)
 
 
 if __name__ == "__main__":
