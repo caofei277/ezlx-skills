@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "说明": "PSD to H5 内置运行时兜底字体。它们只用于原字体加载失败或字符覆盖不足时的显示，不会满足 project.fonts 的原字体审计。",
+  "fonts": [
+    {
+      "id": "source-han-sans-cn",
+      "family": "PSD_Fallback_SourceHanSansCN",
+      "source": "SourceHanSansCN-Normal.subset.ttf",
+      "woff2": "SourceHanSansCN-Normal.subset.woff2",
+      "woff": "SourceHanSansCN-Normal.subset.woff",
+      "category": "cjk",
+      "weight": 400,
+      "style": "normal"
+    },
+    {
+      "id": "pingfang-sc",
+      "family": "PSD_Fallback_PingFangSC",
+      "source": "PingFangSC.subset.ttf",
+      "woff2": "PingFangSC.subset.woff2",
+      "woff": "PingFangSC.subset.woff",
+      "category": "cjk",
+      "weight": 400,
+      "style": "normal"
+    },
+    {
+      "id": "roboto",
+      "family": "PSD_Fallback_Roboto",
+      "source": "Roboto-Regular.subset.ttf",
+      "woff2": "Roboto-Regular.subset.woff2",
+      "woff": "Roboto-Regular.subset.woff",
+      "category": "latin",
+      "weight": 400,
+      "style": "normal"
+    },
+    {
+      "id": "arvo",
+      "family": "PSD_Fallback_Arvo",
+      "source": "Arvo-Regular.subset.ttf",
+      "woff2": "Arvo-Regular.subset.woff2",
+      "woff": "Arvo-Regular.subset.woff",
+      "category": "serif",
+      "weight": 400,
+      "style": "normal"
+    }
+  ]
+}

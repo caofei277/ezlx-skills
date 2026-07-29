@@ -17,7 +17,8 @@ When no suffix exists, use PSD layer kind and visual inspection. `type` layers a
 
 - Use the PSD canvas as the design coordinate system.
 - Store bounds as `[left, top, right, bottom]` in source pixels.
-- Render the H5 inside a stage whose width is `min(100vw, designWidth)` and whose aspect ratio matches the PSD.
+- Render every target inside one stage whose width is `min(100vw, project.layout.maxStageWidth)` and whose aspect ratio matches the PSD. For PC, center the stage and set `project.layout.minViewportWidth` appropriately; do not infer a fluid column reflow from a single PSD.
+- Keep PSD pixels as the canonical unit for positions, dimensions, margins, padding, and gaps. H5 converts them at the stage boundary; `rpx` and `upx` are target-platform output units, not units to mix into H5 CSS.
 - Convert coordinates to percentages or CSS custom properties. Do not resize individual assets independently from their recorded bounds.
 - Retain the source z-order. A background layer should be below its child artwork, and text should remain above the artwork it labels.
 

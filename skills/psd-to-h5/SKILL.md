@@ -32,9 +32,9 @@ Convert one or more layered PSDs into a real asset-based H5 implementation. Pres
 6. Read `manifest.json` or `flow-build.json` and improve the generated H5:
    - Keep bitmap assets for complex artwork, effects, masks, logos, and icons when raster output is the most faithful representation.
    - Replace simple text-layer PNGs with HTML text only when the font, weight, line height, color, and letter spacing can be identified reliably. Keep the raster export as a fallback during visual comparison.
-   - For `project.textMode: "semantic"`, subset configured TTF/OTF files to `WOFF2` plus `WOFF` using the characters present in PSD text layers and emit `@font-face`. Missing fonts are a blocking input error; use raster fallback only with the explicit `--allow-missing-fonts` emergency option and report that the project is incomplete.
+   - For `project.textMode: "semantic"`, subset configured TTF/OTF files to `WOFF2` plus `WOFF` using the characters present in PSD text layers and emit `@font-face`. Also detect valid TTC/OTC font collections even when their filename ends in `.ttf` or `.otf`; inspect each face, select `fontNumber` explicitly when configured or match the PSD font name automatically, and record the choice in `font-audit.json`. The skill also copies its local subsetted Source Han Sans CN, PingFang SC, Roboto, and Arvo resources into `output/fonts/`. Every semantic text layer must receive one CSS family stack in this order: exact PSD WebFont first, category-aware bundled fallbacks always present, then system fallbacks. This remains true when the exact source is present and successfully compressed; the bundled fonts are not conditional substitutes. Missing exact fonts remain a blocking input error; use `--allow-missing-fonts` only for an explicitly incomplete preview, where the same stack omits the unavailable exact family and the audit still reports the missing font.
    - Convert obvious groups into semantic sections and add buttons/links only where the design implies an interaction. Do not guess business behavior; use a small toast, modal, or documented placeholder when no API exists.
-   - Preserve the original 750-wide or equivalent design coordinate system and scale it with a responsive stage. Avoid fixed desktop-only widths.
+   - Preserve the original PSD canvas coordinate system, regardless of whether it is 750-wide mobile or 1440/1920-wide PC. Use one responsive stage for every layer, text box, hotspot, margin, and gap; never scale individual elements with unrelated units. Set `project.platform` to `mobile`, `pc`, or `universal`, and use `project.layout.mode: "canvas"` with `scale: "down-only"` for strict proportional rendering. A PC PSD is supported as a centered fixed canvas that scales down in narrower windows; true breakpoint reflow requires explicit breakpoint rules or additional PSDs and must not be guessed from one image.
 7. Validate the generated output:
    - Run `scripts/validate_output.py <output-dir>`. It must fail on fatal export errors or any effect-bearing `topil` fallback.
    - Start a local static server and capture screenshots at the design viewport and at least one narrow mobile viewport.
@@ -72,6 +72,15 @@ python3 /path/to/psd-to-h5/scripts/init_project.py ./h5-project \
   --psd ./designs/home.psd --psd ./designs/home-share.psd
 ```
 
+For a PC canvas, use its actual PSD size and target platform:
+
+```bash
+python3 /path/to/psd-to-h5/scripts/init_project.py ./pc-project \
+  --name "Desktop Console" --platform pc \
+  --design-width 1440 --design-height 900 \
+  --psd ./designs/console.psd
+```
+
 After the user adds PSDs and edits the generated `flow.json`, validate and build it:
 
 ```bash
@@ -82,7 +91,9 @@ python3 /path/to/psd-to-h5/scripts/build_flow.py ./h5-project/flow.json
 
 Strict validation requires the generated `_generatedBy`, `_guide`, `_examples`, `_instructions`, and `_fontAudit` fields. These are configuration documentation and audit records, not disposable comments. If a flow was created manually or those fields were deleted, rerun `init_project.py` with the actual PSD paths and then reapply only the user's page descriptions, overlays, elements, and transitions.
 
-`analyze_fonts.py` reads font names from PSD text layers, adds a suggested `project.fonts` mapping for newly discovered names, and reports the source file each user must place in `fonts/`. The audit never checks the operating system font directory. `project.fonts.<name>.file` is the source of truth; `.otf` and `.ttf` are both opened from that path even if the auxiliary `format` value is stale. `validate_flow.py --strict` also adds mappings automatically and treats missing source files as errors. `build_flow.py` adds mappings as a final guard, prints the missing font list, writes it to `output/font-audit.json`, and exits with code 3 unless `--allow-missing-fonts` is explicitly used. Never report a build with missing fonts as complete.
+All geometry uses PSD design pixels as the canonical unit. H5 output converts the shared stage to percentages/CSS variables; other targets may compile the same values to `rpx` or `upx`. Do not put `rpx` or `upx` directly into H5 CSS. `project.layout` controls the shared stage: `maxStageWidth` normally equals `designWidth`, `minViewportWidth` is normally 320 for mobile/universal and 1024 for PC, and `center` controls desktop centering.
+
+`analyze_fonts.py` reads font names from PSD text layers, adds a suggested `project.fonts` mapping for newly discovered names, and reports the source file each user must place in `fonts/`. The audit never checks the operating system font directory. `project.fonts.<name>.file` is the source of truth; `.otf`, `.ttf`, `.otc`, and `.ttc` are opened from that path even if the auxiliary `format` value is stale. A collection source is inspected for its faces and can be pinned with `fontNumber`; automatic face selection and its evidence are written to `output/font-audit.json`. `project.fonts.<name>.fallbackCategory` can override automatic `cjk`, `latin`, or `serif` fallback selection. `validate_flow.py --strict` also adds mappings automatically and treats missing source files as errors. `build_flow.py` adds mappings as a final guard, prints the missing font list, writes it to `output/font-audit.json`, copies the built-in fallbacks locally, and writes the always-present exact-first CSS stack into each semantic layer. It exits with code 3 unless `--allow-missing-fonts` is explicitly used. Never report a build with missing fonts as complete.
 
 Use `--force` only when the user explicitly asks to regenerate an existing output:
 

@@ -137,6 +137,23 @@ def main() -> int:
             errors.append(f"project.{key} must be a positive integer")
     if not isinstance(project.get("fonts"), dict):
         errors.append("project.fonts must be an object")
+    platform = project.get("platform", "universal")
+    if platform not in ("universal", "mobile", "pc"):
+        errors.append("project.platform must be universal, mobile, or pc")
+    layout = project.get("layout", {})
+    if not isinstance(layout, dict):
+        errors.append("project.layout must be an object")
+    else:
+        if layout.get("mode", "canvas") != "canvas":
+            errors.append("project.layout.mode currently supports only canvas")
+        if layout.get("scale", "down-only") != "down-only":
+            errors.append("project.layout.scale currently supports only down-only")
+        for key in ("maxStageWidth", "minViewportWidth"):
+            value = layout.get(key)
+            if value is not None and (not isinstance(value, int) or value <= 0):
+                errors.append(f"project.layout.{key} must be a positive integer")
+        if "center" in layout and not isinstance(layout["center"], bool):
+            errors.append("project.layout.center must be boolean")
 
     screens = data.get("screens")
     if not isinstance(screens, list) or not screens:

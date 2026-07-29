@@ -40,6 +40,7 @@ def main() -> None:
     parser.add_argument("--name", default="PSD 转 H5 项目")
     parser.add_argument("--design-width", type=int, default=750)
     parser.add_argument("--design-height", type=int, default=1630)
+    parser.add_argument("--platform", choices=("universal", "mobile", "pc"), default="universal", help="Target viewport family")
     parser.add_argument("--psd", action="append", default=[], help="PSD/PSB source to scan for required fonts; repeat for multiple files")
     args = parser.parse_args()
 
@@ -61,6 +62,14 @@ def main() -> None:
             "outputDir": "output",
             "textMode": "semantic",
             "fonts": {},
+            "platform": args.platform,
+            "layout": {
+                "mode": "canvas",
+                "scale": "down-only",
+                "maxStageWidth": args.design_width,
+                "minViewportWidth": 1024 if args.platform == "pc" else 320,
+                "center": True,
+            },
         },
         "screens": [],
         "transitions": [
@@ -80,13 +89,23 @@ def main() -> None:
             "project.designWidth": {"作用": "PSD 设计稿宽度，必须与 PSD 画布一致。", "示例": args.design_width},
             "project.designHeight": {"作用": "PSD 设计稿高度，必须与 PSD 画布一致。", "示例": args.design_height},
             "project.outputDir": {"作用": "构建产物目录，相对于 flow.json。", "示例": "output"},
-            "project.textMode": {"作用": "字体齐全并成功压缩后是否使用 WebFont 语义文字；失败时自动回退 PNG。", "示例": "semantic"},
+            "project.textMode": {"作用": "是否使用 WebFont 语义文字。语义文字的 CSS 字体栈始终是 PSD 原字体、skill 内置兜底字体、系统字体；原字体缺失时默认阻止构建，只有显式 --allow-missing-fonts 才允许临时使用兜底栈。", "示例": "semantic"},
+            "project.platform": {"作用": "目标视口类型。universal 兼容移动端和 PC，mobile 适合 H5，pc 适合桌面固定画布。", "示例": "universal"},
+            "project.layout": {"作用": "所有 PSD 元素共同使用的画布缩放规则；不要让单个元素自行使用另一套尺寸单位。", "示例": {"mode": "canvas", "scale": "down-only", "maxStageWidth": 1440, "minViewportWidth": 1024, "center": True}},
+            "project.layout.mode": {"作用": "canvas 表示严格保持 PSD 坐标比例的设计画布；真正的响应式重排需要额外提供断点规则，程序不会从单张 PSD 猜测。", "示例": "canvas"},
+            "project.layout.scale": {"作用": "down-only 表示窗口小于设计稿时等比缩小，窗口更大时不放大超过 maxStageWidth。", "示例": "down-only"},
+            "project.layout.maxStageWidth": {"作用": "stage 最大显示宽度，通常等于 PSD designWidth；PC 设计稿可填写 1440 或 1920。", "示例": 1440},
+            "project.layout.minViewportWidth": {"作用": "目标平台的最小视口宽度。PC 页面通常为 1024，移动 H5 通常为 320。", "示例": 1024},
+            "project.layout.center": {"作用": "stage 是否在视口中水平居中。", "示例": True},
             "project.fonts": {"作用": "PSD 字体名到字体源文件的映射，key 必须和 PSD 字体名一致。", "示例": {"SourceHanSansCN-Regular": {"file": "fonts/SourceHanSansCN-Regular.otf", "format": "otf", "family": "Source Han Sans CN"}}},
-            "project.fonts[].file": {"作用": "用户放入 fonts/ 目录的 TTF 或 OTF 源字体路径。", "示例": "fonts/SourceHanSansCN-Regular.otf"},
-            "project.fonts[].format": {"作用": "源字体格式的辅助标记，填写 ttf 或 otf；实际读取路径以同一项的 file 为准，二者不一致时不会改写 file。", "示例": "otf"},
+            "project.fonts[].file": {"作用": "用户放入 fonts/ 目录的 TTF、OTF、TTC 或 OTC 源字体路径；实际读取路径以 file 为准。", "示例": "fonts/SourceHanSansCN-Regular.otf"},
+            "project.fonts[].format": {"作用": "源字体格式的辅助标记，填写 ttf、otf、ttc 或 otc；程序会读取 file 的真实格式，不会用 format 改写路径。", "示例": "otf"},
+            "project.fonts[].fontNumber": {"作用": "字体集合 TTC/OTC 中的字体面编号，从 0 开始；不填写时程序会按 PSD 字体名自动匹配，无法区分时使用第 0 面并写入审计。", "示例": 0},
             "project.fonts[].family": {"作用": "页面使用的字体族显示名称。", "示例": "Source Han Sans CN"},
             "project.fonts[].weight": {"作用": "字体粗细，400 为常规，500 为中等，700 为粗体；可选。", "示例": 400},
             "project.fonts[].style": {"作用": "字体样式，normal 或 italic；可选。", "示例": "normal"},
+            "project.fonts[].fallbackCategory": {"作用": "可选的内置兜底类别。cjk 用中文字体，latin 用拉丁/数字字体，serif 用衬线展示字体；不填写时程序按字体名和文字内容自动判断。", "示例": "cjk"},
+            "bundledFallbackFonts": {"作用": "skill 自带的本地项目字体资源，构建时无条件复制到 output/fonts 并写入 CSS；每个语义文字层都会把它们按类别放在 PSD 原字体后面，它们不会消除原 PSD 字体缺失审计。", "示例": ["PSD_Fallback_SourceHanSansCN", "PSD_Fallback_PingFangSC", "PSD_Fallback_Roboto", "PSD_Fallback_Arvo"]},
             "screens[]": {"作用": "独立页面列表，每个 screens 项代表一个页面。", "示例": "我的、订单列表、商品详情分别配置为不同 screen。"},
             "screens[].id": {"作用": "页面唯一 ID，页面跳转时使用。", "示例": "我的"},
             "screens[].default": {"作用": "该页面默认 PSD 文件路径。", "示例": "psd/我的默认.psd"},
@@ -122,7 +141,9 @@ def main() -> None:
             "跨页面跳转只填写 transitions.to；打开页面内 overlay 时额外填写 transitions.overlay。",
             "JSON 不支持 // 注释，因此字段说明和示例集中放在同一个文件的 _guide 与 _examples 中，构建时会忽略它们。",
             "初始化时可使用 --psd 文件路径重复传入 PSD；程序会读取文本图层并把所需字体写入 project.fonts。没有在初始化时传入 PSD 时，放入 psd/ 后运行 analyze_fonts.py flow.json --update。",
-            "字体文件请按 project.fonts 中的 file 路径放入 fonts/，构建时会自动检查、子集化为 WOFF2 并引入页面。",
+            "字体文件请按 project.fonts 中的 file 路径放入 fonts/，构建时会自动检查、子集化为 WOFF2 和 WOFF 并引入页面。skill 自带字体会无条件复制并作为每个 CSS font-family 的后续降级项，但不能替代 PSD 原字体；缺失原字体时必须先补齐，只有临时预览才使用 --allow-missing-fonts。",
+            "所有元素尺寸、位置、边距和间距都以 PSD 设计像素为基准；H5 统一通过 project.layout 的 stage 缩放，不要在单个元素上混用 px、vw、rpx 或 upx。",
+            "PC 设计稿请将 project.platform 设为 pc，并把 designWidth/designHeight 填为 PSD 真实画布尺寸；真正的断点重排需要额外规则或多张 PSD，程序不会猜测。",
             "填写完成后对 AI 说“开始”，即可执行切图、组装和浏览器校验。",
         ],
     }

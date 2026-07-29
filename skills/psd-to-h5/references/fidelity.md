@@ -10,6 +10,8 @@ Layered UI screens with a known mobile canvas, ordinary text layers, transparent
 - Photoshop-only blend modes, filters, layer effects, and adjustment layers may not render identically through `psd-tools`.
 - Shape layers with gradients, vector masks, ColorOverlay, or other layer effects require `psd-tools[composite]`; the exporter now fails instead of silently using `topil()` for an effect-bearing layer.
 - Missing fonts make semantic text differ even when the text content is correct.
+- A `.ttf` or `.otf` filename may contain a TTC/OTC font collection. The builder must inspect the file signature and collection faces instead of assuming one face from the extension; otherwise a valid source can incorrectly fall back to raster text.
+- The skill bundles subsetted Source Han Sans CN, PingFang SC, Roboto, and Arvo as local project fonts. They are always emitted and ordered by CJK, Latin, or serif category after the exact PSD font and before system fonts in every semantic layer's CSS `font-family`. They improve network/runtime resilience but cannot reproduce the metrics of a missing PSD font and never clear the missing-font audit.
 - Clipping masks and inherited group visibility can produce blank or duplicated exports if the layer tree is flattened incorrectly.
 - Groups are structural containers, not general export assets. A group is allowed as a raster boundary only when the PSD itself puts a layer effect on that group; flattening a tabbar, menu, card, or dialog group merely to match a screenshot destroys independent text and interaction boundaries.
 - Hidden layers should be omitted from the page but preserved in the manifest only when `--include-hidden` is requested.
