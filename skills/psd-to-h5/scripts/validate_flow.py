@@ -50,6 +50,29 @@ def reject_placeholders(value: Any) -> bool:
     return isinstance(value, str) and ("请替换" in value or value in ("psd/页面默认.psd", "psd/页面弹层.psd"))
 
 
+def element_ids(entries: Any) -> set[str]:
+    if not isinstance(entries, list):
+        return set()
+    return {
+        entry["id"] for entry in entries
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str) and entry["id"]
+    }
+
+
+def validate_element_entries(owner: str, entries: Any, errors: list[str]) -> None:
+    if not isinstance(entries, list):
+        errors.append(f"{owner}.elements must be an array")
+        return
+    seen: set[str] = set()
+    for element in entries:
+        if not isinstance(element, dict) or not isinstance(element.get("id"), str) or not element["id"]:
+            errors.append(f"{owner}.elements entries need string ids")
+            continue
+        if element["id"] in seen:
+            errors.append(f"duplicate element id: {owner}:{element['id']}")
+        seen.add(element["id"])
+
+
 def state_key(screen_id: str, state_id: str) -> str:
     return f"{screen_id}:{state_id}"
 
@@ -108,6 +131,8 @@ def validate_visual_entries(
                 issue(f"{screen_id}:{entry_id}.psd is still an initialization placeholder: {psd_path}", errors, warnings, strict)
             if not (base_dir / psd_path).resolve().is_file():
                 issue(f"missing PSD: {psd_path}", errors, warnings, strict)
+        if "elements" in entry:
+            validate_element_entries(f"{screen_id}:{entry_id}", entry["elements"], errors)
 
 
 def main() -> int:
@@ -189,18 +214,21 @@ def main() -> int:
         if "states" in screen:
             warnings.append(f"{screen_id}.states is deprecated; use overlays without a mode field")
             validate_visual_entries(screen_id, screen.get("states"), "states", base_dir, known_states, seen_states, errors, warnings, args.strict, allow_mode=True)
-        elements = screen.get("elements", [])
-        if not isinstance(elements, list):
-            errors.append(f"{screen_id}.elements must be an array")
-        else:
-            element_ids: set[str] = set()
-            for element in elements:
-                if not isinstance(element, dict) or not isinstance(element.get("id"), str):
-                    errors.append(f"{screen_id} elements need string ids")
-                elif element["id"] in element_ids:
-                    errors.append(f"duplicate element id: {screen_id}:{element['id']}")
-                else:
-                    element_ids.add(element["id"])
+        validate_element_entries(screen_id, screen.get("elements", []), errors)
+
+    state_elements: dict[str, set[str]] = {}
+    for screen in screens:
+        if not isinstance(screen, dict) or not isinstance(screen.get("id"), str):
+            continue
+        screen_id = screen["id"]
+        screen_ids = element_ids(screen.get("elements", []))
+        state_elements[state_key(screen_id, "default")] = screen_ids
+        for entry_name in ("overlays", "states"):
+            for entry in screen.get(entry_name, []) or []:
+                if not isinstance(entry, dict) or not isinstance(entry.get("id"), str):
+                    continue
+                explicit = element_ids(entry.get("elements")) if entry.get("elements") else set()
+                state_elements[state_key(screen_id, entry["id"])] = explicit or screen_ids
 
     transitions = data.get("transitions", [])
     if not isinstance(transitions, list):
@@ -221,6 +249,15 @@ def main() -> int:
             target = transition.get(key)
             if normalized and normalized not in known_states:
                 errors.append(f"transition {index} references unknown state: {target}")
+        source = normalize_target(transition["from"]) if isinstance(transition.get("from"), str) else None
+        trigger = transition.get("trigger")
+        if source and isinstance(trigger, str) and trigger not in state_elements.get(source, set()):
+            issue(
+                f"transition {index} trigger has no element in {source}: {trigger}",
+                errors,
+                warnings,
+                args.strict,
+            )
 
     # PSD text layers define required project inputs. System-installed fonts do
     # not count; every discovered family needs an explicit fonts/ mapping.

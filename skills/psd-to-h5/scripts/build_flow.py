@@ -38,6 +38,50 @@ def transition_target(transition: dict[str, Any], key: str) -> str:
     return target
 
 
+def transition_trigger_index(transitions: Any) -> dict[str, set[str]]:
+    """Index declared triggers by normalized source state for element inference."""
+    result: dict[str, set[str]] = {}
+    if not isinstance(transitions, list):
+        return result
+    for transition in transitions:
+        if not isinstance(transition, dict):
+            continue
+        source = transition.get("from")
+        trigger = transition.get("trigger")
+        if not isinstance(source, str) or not isinstance(trigger, str) or not source or not trigger:
+            continue
+        result.setdefault(normalize_key(source), set()).add(trigger)
+    return result
+
+
+def state_element_specs(
+    screen: dict[str, Any],
+    spec: dict[str, Any],
+    mode: str,
+    state_key: str,
+    trigger_index: dict[str, set[str]],
+) -> tuple[list[Any], str]:
+    """Resolve state-owned elements without requiring users to duplicate page elements."""
+    screen_elements = screen.get("elements", [])
+    if not isinstance(screen_elements, list):
+        screen_elements = []
+    explicit = spec.get("elements")
+    if mode != "overlay":
+        return screen_elements, "screen"
+    if isinstance(explicit, list) and explicit:
+        return explicit, "overlay"
+    triggers = trigger_index.get(state_key, set())
+    inherited = [
+        element for element in screen_elements
+        if isinstance(element, dict) and element.get("id") in triggers
+    ]
+    return inherited, "screen-transition-inferred"
+
+
+def layer_map(layers: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    return {layer["name"]: layer for layer in layers if isinstance(layer, dict) and layer.get("name")}
+
+
 def resolve_layout(project: dict[str, Any], width: int) -> dict[str, Any]:
     """Resolve one canvas scaling contract for mobile, universal, and PC targets."""
     platform = project.get("platform", "universal")
@@ -424,20 +468,23 @@ def write_runtime(output: Path, runtime: dict[str, Any]) -> None:
     const base = state.mode === 'overlay' ? runtime.states[state.base] : null;
     const layers = base ? [...base.layers, ...state.layers] : state.layers;
     layers.forEach((layer, index) => {
-      const useText = runtime.textMode === 'semantic' && layer.text && layer.font_css_family;
+      const useText = (runtime.textMode || runtime.text_mode) === 'semantic' && layer.text && layer.font_css_family;
       const node = document.createElement(useText ? 'span' : 'img');
       node.className = useText ? 'flow-text' : 'flow-layer';
       node.alt = layer.text || '';
       node.dataset.layer = layer.name;
       node.style.cssText = cssPosition(layer.bounds) + '--z:' + index + ';--opacity:' + (layer.rendered_opacity ? 1 : layer.opacity / 255) + ';';
       if (useText) {
-        node.textContent = String(layer.text).replace(/\\r/g, '\\n');
+        const textContent = String(layer.text).replace(/\\r/g, '\\n');
+        node.textContent = textContent;
         node.style.fontFamily = layer.font_css_family;
         node.style.fontSize = 'min(calc(' + (layer.font_size || 16) + ' * 100vw / ' + runtime.canvas.width + '), calc(' + (layer.font_size || 16) + 'px))';
         node.style.fontWeight = String(layer.font_weight || 400);
         node.style.fontStyle = layer.font_style || 'normal';
         node.style.letterSpacing = (layer.letter_spacing || 0) + 'em';
         node.style.color = layer.text_color || '#3d3026';
+        node.style.whiteSpace = textContent.includes('\\n') ? 'pre' : 'nowrap';
+        node.style.overflow = 'visible';
       } else {
         node.src = layer.asset;
       }
@@ -509,7 +556,7 @@ body {{ min-width:{layout["minViewportWidth"]}px; background:#f2f2f2; }}
 .flow-preview {{ display:flex; justify-content:{justify_content}; min-height:100vh; }}
 .flow-stage {{ position:relative; width:min(100vw, {layout["maxStageWidth"]}px); aspect-ratio:{width}/{height}; overflow:hidden; background:#fff; isolation:isolate; }}
 .flow-layer {{ position:absolute; display:block; left:calc(var(--x) * 100% / {width}); top:calc(var(--y) * 100% / {height}); width:calc(var(--w) * 100% / {width}); height:calc(var(--h) * 100% / {height}); z-index:var(--z); opacity:var(--opacity); user-select:none; -webkit-user-drag:none; }}
-.flow-text {{ position:absolute; display:block; left:calc(var(--x) * 100% / {width}); top:calc(var(--y) * 100% / {height}); width:calc(var(--w) * 100% / {width}); height:calc(var(--h) * 100% / {height}); z-index:var(--z); opacity:var(--opacity); overflow:hidden; line-height:1; white-space:pre-wrap; user-select:none; }}
+.flow-text {{ position:absolute; display:block; left:calc(var(--x) * 100% / {width}); top:calc(var(--y) * 100% / {height}); width:calc(var(--w) * 100% / {width}); height:calc(var(--h) * 100% / {height}); z-index:var(--z); opacity:var(--opacity); overflow:visible; line-height:1; white-space:nowrap; user-select:none; }}
 .flow-hotspot {{ position:absolute; left:calc(var(--x) * 100% / {width}); top:calc(var(--y) * 100% / {height}); width:calc(var(--w) * 100% / {width}); height:calc(var(--h) * 100% / {height}); z-index:10000; border:0; background:transparent; cursor:pointer; }}
 .flow-hotspot:focus-visible {{ outline:2px solid #c88735; outline-offset:-2px; border-radius:8px; }}
 .sr-only {{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }}
@@ -570,6 +617,8 @@ def main() -> None:
         "font_audit": {},
     }
     runtime["layout"] = resolve_layout(project, runtime["canvas"]["width"])
+    trigger_index = transition_trigger_index(data.get("transitions", []))
+    interaction_gaps: list[dict[str, str]] = []
     state_specs: list[tuple[str, str, str, str, dict[str, Any]]] = []
     for screen in data.get("screens", []):
         screen_id = screen["id"]
@@ -592,17 +641,41 @@ def main() -> None:
             command.append("--force")
         subprocess.run(command, check=True)
         manifest = json.loads((state_dir / "manifest.json").read_text(encoding="utf-8"))
-        layer_by_name = {layer["name"]: layer for layer in manifest.get("layers", [])}
+        layer_by_name = layer_map(manifest.get("layers", []))
+        base_key = normalize_key(spec.get("base", screen_id)) if mode == "overlay" else ""
+        base_layer_by_name = layer_map(runtime["states"].get(base_key, {}).get("layers", []))
         elements: list[dict[str, Any]] = []
-        for element in spec.get("elements", []):
+        element_specs, element_source = state_element_specs(
+            spec.get("screen", spec) if isinstance(spec.get("screen", spec), dict) else {},
+            spec,
+            mode,
+            f"{screen_id}:{state_id}",
+            trigger_index,
+        )
+        for element in element_specs:
             if not isinstance(element, dict) or not element.get("id"):
                 continue
             bounds = element.get("bounds")
             if not bounds and element.get("layer") in layer_by_name:
                 bounds = layer_by_name[element["layer"]].get("bounds")
+            if not bounds and element.get("layer") in base_layer_by_name:
+                bounds = base_layer_by_name[element["layer"]].get("bounds")
             if not isinstance(bounds, list) or len(bounds) != 4:
                 continue
-            elements.append({"id": element["id"], "description": element.get("description", element["id"]), "bounds": bounds})
+            elements.append({
+                "id": element["id"],
+                "description": element.get("description", element["id"]),
+                "bounds": bounds,
+                "source": element_source,
+            })
+        element_ids = {element["id"] for element in elements}
+        for trigger in sorted(trigger_index.get(f"{screen_id}:{state_id}", set())):
+            if trigger not in element_ids:
+                interaction_gaps.append({
+                    "state": f"{screen_id}:{state_id}",
+                    "trigger": trigger,
+                    "reason": "transition has no element with resolvable bounds",
+                })
         key = f"{screen_id}:{state_id}"
         layers = []
         for layer in manifest.get("layers", []):
@@ -674,6 +747,7 @@ def main() -> None:
         })
 
     (output / "font-audit.json").write_text(json.dumps(runtime["font_audit"], ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    runtime["interaction_gaps"] = interaction_gaps
     (output / "flow-build.json").write_text(json.dumps(runtime, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     write_runtime(output, runtime)
     font_gaps = [item["name"] for item in runtime["font_audit"].get("missing_mapping", [])]
@@ -684,6 +758,10 @@ def main() -> None:
         print("[psd-to-h5] FONT INPUT REQUIRED: provide these PSD fonts in project.fonts and fonts/:", file=sys.stderr)
         for name in font_failures:
             print(f"  - {name}", file=sys.stderr)
+    if interaction_gaps:
+        print("[psd-to-h5] INTERACTION INPUT REQUIRED: these transitions have no clickable element:", file=sys.stderr)
+        for gap in interaction_gaps:
+            print(f"  - {gap['state']} -> {gap['trigger']}: {gap['reason']}", file=sys.stderr)
     print(json.dumps({
         "output": str(output),
         "states": len(runtime["states"]),
@@ -692,7 +770,11 @@ def main() -> None:
         "missing_fonts": font_failures,
         "missing_font_mappings": runtime["font_audit"].get("unconfigured", []),
         "font_compression_errors": runtime["font_audit"].get("compression_errors", []),
+        "interaction_gaps": interaction_gaps,
     }, ensure_ascii=False))
+    if interaction_gaps:
+        print("[psd-to-h5] build stopped: add overlay elements or resolvable screen elements for every transition trigger.", file=sys.stderr)
+        raise SystemExit(4)
     if font_failures and not args.allow_missing_fonts:
         print("[psd-to-h5] build stopped: provide the listed font files, then run build_flow.py again.", file=sys.stderr)
         raise SystemExit(3)

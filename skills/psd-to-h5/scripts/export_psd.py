@@ -245,7 +245,7 @@ body {{ min-width: 320px; background: #f2f2f2; }}
 .preview {{ display: flex; justify-content: center; min-height: 100vh; }}
 .psd-stage {{ position: relative; width: min(100vw, calc(var(--design-width) * 1px)); aspect-ratio: var(--design-width) / var(--design-height); overflow: hidden; background: #fff; isolation: isolate; }}
 .psd-layer, .psd-text {{ position: absolute; display: block; left: calc(var(--x) * 100% / var(--design-width)); top: calc(var(--y) * 100% / var(--design-height)); width: calc(var(--w) * 100% / var(--design-width)); height: calc(var(--h) * 100% / var(--design-height)); z-index: var(--z); opacity: var(--opacity); user-select: none; -webkit-user-drag: none; }}
-.psd-text {{ overflow: hidden; color: #3d3026; font-size: min(calc(var(--font-size) * 100vw / var(--design-width)), calc(var(--font-size) * 1px)); line-height: 1; white-space: nowrap; }}
+.psd-text {{ overflow: visible; color: #3d3026; font-size: min(calc(var(--font-size) * 100vw / var(--design-width)), calc(var(--font-size) * 1px)); line-height: 1; white-space: nowrap; }}
 @media (min-width: 520px) {{ .preview {{ padding: 28px 0; }} .psd-stage {{ border-radius: 12px; box-shadow: 0 12px 40px rgba(34,24,14,.16); }} }}
 '''
     (output / "index.html").write_text(html, encoding="utf-8")
