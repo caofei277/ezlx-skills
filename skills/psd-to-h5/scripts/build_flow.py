@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -29,6 +30,40 @@ def normalize_key(value: str) -> str:
         screen_id, state_id = value.split("#", 1)
         return f"{screen_id}:{state_id}"
     return f"{value}:default"
+
+
+def page_file_stem(title: Any, used: set[str]) -> str:
+    """Create a readable, deterministic HTML stem from a screen title."""
+    raw = str(title or "页面").strip()
+    stem = re.sub(r"[\x00-\x1f<>:\"/\\|?*]+", "-", raw)
+    stem = re.sub(r"\s+", "-", stem)
+    stem = re.sub(r"-{2,}", "-", stem).strip(" .-_") or "页面"
+    if stem.lower() in {".", "..", "index"}:
+        stem = f"{stem}-page"
+    candidate = stem
+    suffix = 2
+    while candidate in used:
+        candidate = f"{stem}-{suffix}"
+        suffix += 1
+    used.add(candidate)
+    return candidate
+
+
+def page_file_map(screens: list[dict[str, Any]]) -> dict[str, dict[str, str]]:
+    """Map screen IDs to isolated HTML and asset locations."""
+    used: set[str] = {"fonts", "flow-build", "font-audit", "review"}
+    result: dict[str, dict[str, str]] = {}
+    for screen in screens:
+        screen_id = screen["id"]
+        title = screen.get("title") or screen_id
+        stem = page_file_stem(title, used)
+        result[screen_id] = {
+            "title": str(title),
+            "stem": stem,
+            "html": f"{stem}.html",
+            "asset_dir": f"{stem}.assets",
+        }
+    return result
 
 
 def transition_target(transition: dict[str, Any], key: str) -> str:
@@ -444,10 +479,11 @@ def prepare_font_config(flow_path: Path, data: dict[str, Any]) -> tuple[dict[str
     return scan, audit, added
 
 
-def write_runtime(output: Path, runtime: dict[str, Any]) -> None:
+def write_runtime(page_dir: Path, runtime: dict[str, Any], html_path: Path, output_root: Path) -> None:
+    """Write one isolated document runtime for one root screen."""
     runtime_json = json.dumps(runtime, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
-    (output / "flow-runtime.js").write_text(f"window.PSD_H5_FLOW = {runtime_json};\n", encoding="utf-8")
-    (output / "app.js").write_text(
+    (page_dir / "flow-runtime.js").write_text(f"window.PSD_H5_FLOW = {runtime_json};\n", encoding="utf-8")
+    (page_dir / "app.js").write_text(
         """(() => {
   const runtime = window.PSD_H5_FLOW;
   const stage = document.querySelector('.flow-stage');
@@ -500,23 +536,31 @@ def write_runtime(output: Path, runtime: dict[str, Any]) -> None:
       button.addEventListener('click', () => transition(element.id));
       stage.append(button);
     }
-    title.textContent = state.title || stateKey;
+    title.textContent = state.title || runtime.page.title || stateKey;
   }
 
   function transition(trigger) {
     const match = runtime.transitions.find(item => item.from === current && item.trigger === trigger);
-    if (match) {
-      history.pushState({}, '', `#${encodeURIComponent(match.to)}`);
-      render(match.to);
+    if (!match) return;
+    if (match.navigation === 'cross-page') {
+      const targetState = match.target_state && match.target_state !== 'default'
+        ? '#' + encodeURIComponent(match.target_state)
+        : '';
+      window.location.assign(match.href + targetState);
+      return;
     }
+    history.pushState({}, '', `#${encodeURIComponent(match.to)}`);
+    render(match.to);
   }
 
-  const initial = location.hash ? decodeURIComponent(location.hash.slice(1)) : runtime.initial;
-  render(runtime.states[initial] ? initial : runtime.initial);
-  window.addEventListener('popstate', () => {
-    const next = location.hash ? decodeURIComponent(location.hash.slice(1)) : runtime.initial;
-    render(runtime.states[next] ? next : runtime.initial);
-  });
+  function renderFromHash() {
+    const requested = location.hash ? decodeURIComponent(location.hash.slice(1)) : runtime.initial;
+    render(runtime.states[requested] ? requested : runtime.initial);
+  }
+
+  renderFromHash();
+  window.addEventListener('popstate', renderFromHash);
+  window.addEventListener('hashchange', renderFromHash);
 })();
 """,
         encoding="utf-8",
@@ -526,17 +570,21 @@ def write_runtime(output: Path, runtime: dict[str, Any]) -> None:
     layout = runtime["layout"]
     justify_content = "center" if layout["center"] else "flex-start"
     font_faces = []
+
+    def css_font_url(path: str) -> str:
+        return Path(os.path.relpath(output_root / path, page_dir)).as_posix()
+
     for font in runtime.get("fonts", {}).values():
         font_faces.append(
             "@font-face { "
             f'font-family: "{font["family"]}"; '
-            f'src: url("./{font["woff2"]}") format("woff2"), url("./{font["woff"]}") format("woff"); '
+            f'src: url("{css_font_url(font["woff2"])}") format("woff2"), url("{css_font_url(font["woff"])}") format("woff"); '
             f'font-weight: {font["weight"]}; font-style: {font["style"]}; font-display: swap; '
             "}"
         )
     for font in runtime.get("fallback_fonts", {}).values():
         sources = ", ".join(
-            f'url("./{item["path"]}") format("{item["format"]}")' for item in font.get("files", [])
+            f'url("{css_font_url(item["path"])}") format("{item["format"]}")' for item in font.get("files", [])
         )
         if sources:
             font_faces.append(
@@ -547,7 +595,7 @@ def write_runtime(output: Path, runtime: dict[str, Any]) -> None:
                 "}"
             )
     font_face_css = "\n".join(font_faces)
-    (output / "styles.css").write_text(
+    (page_dir / "styles.css").write_text(
         f"""{font_face_css}
 :root {{ font-family: \"PSD_Fallback_SourceHanSansCN\", \"PSD_Fallback_Roboto\", -apple-system, BlinkMacSystemFont, \"Helvetica Neue\", \"PingFang SC\", sans-serif; background:#f2f2f2; }}
 * {{ box-sizing:border-box; }}
@@ -564,27 +612,91 @@ body {{ min-width:{layout["minViewportWidth"]}px; background:#f2f2f2; }}
 """,
         encoding="utf-8",
     )
-    (output / "index.html").write_text(
-        """<!doctype html>
+    page_title = html.escape(str(runtime.get("page", {}).get("title") or "PSD H5 Page"), quote=True)
+    html_path.write_text(
+        f"""<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>PSD to H5 Flow</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <title>{page_title}</title>
+    <link rel="stylesheet" href="./{page_dir.name}/styles.css" />
   </head>
   <body>
-    <main class="flow-preview" aria-label="PSD H5 flow preview">
+    <main class="flow-preview" aria-label="PSD H5 page preview">
       <span class="sr-only" data-flow-title aria-live="polite"></span>
       <div class="flow-stage"></div>
     </main>
-    <script src="./flow-runtime.js"></script>
-    <script src="./app.js"></script>
+    <script src="./{page_dir.name}/flow-runtime.js"></script>
+    <script src="./{page_dir.name}/app.js"></script>
   </body>
 </html>
 """,
         encoding="utf-8",
     )
+
+
+def page_runtime(
+    runtime: dict[str, Any],
+    screen_id: str,
+    page_info: dict[str, str],
+    screens: dict[str, dict[str, str]],
+    transitions: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Project the global build records into one screen-local runtime."""
+    prefix = f"{screen_id}:"
+    states: dict[str, Any] = {}
+    for key, state in runtime["states"].items():
+        if not key.startswith(prefix):
+            continue
+        state_id = key[len(prefix):]
+        record = json.loads(json.dumps(state, ensure_ascii=False))
+        if record.get("mode") == "overlay":
+            base = str(record.get("base", ""))
+            record["base"] = base[len(prefix):] if base.startswith(prefix) else "default"
+        states[state_id] = record
+
+    local_transitions: list[dict[str, Any]] = []
+    for transition in transitions:
+        source = normalize_key(transition["from"])
+        source_screen, source_state = source.split(":", 1)
+        if source_screen != screen_id:
+            continue
+        target_screen = transition["to"]
+        target_state = transition.get("overlay") or "default"
+        if target_screen == screen_id:
+            local_transitions.append({
+                "from": source_state,
+                "trigger": transition["trigger"],
+                "to": target_state,
+                "navigation": "same-page",
+            })
+            continue
+        target = screens.get(target_screen)
+        if not target:
+            continue
+        local_transitions.append({
+            "from": source_state,
+            "trigger": transition["trigger"],
+            "navigation": "cross-page",
+            "target_screen": target_screen,
+            "target_state": target_state,
+            "href": target["html"],
+        })
+
+    return {
+        "canvas": runtime["canvas"],
+        "layout": runtime["layout"],
+        "initial": "default",
+        "states": states,
+        "transitions": local_transitions,
+        "text_mode": runtime.get("text_mode", "raster"),
+        "fonts": runtime.get("fonts", {}),
+        "fallback_fonts": runtime.get("fallback_fonts", {}),
+        "font_stack_policy": runtime.get("font_stack_policy"),
+        "font_audit": runtime.get("font_audit", {}),
+        "page": page_info,
+    }
 
 
 def main() -> None:
@@ -607,10 +719,13 @@ def main() -> None:
     output.mkdir(parents=True, exist_ok=True)
 
     exporter = Path(__file__).with_name("export_psd.py")
+    screens = data.get("screens", [])
+    screen_files = page_file_map(screens)
     runtime: dict[str, Any] = {
         "canvas": {"width": int(project.get("designWidth", 750)), "height": int(project.get("designHeight", 1630))},
         "initial": "",
         "states": {},
+        "pages": screen_files,
         "transitions": [],
         "text_mode": "raster",
         "fonts": {},
@@ -620,7 +735,7 @@ def main() -> None:
     trigger_index = transition_trigger_index(data.get("transitions", []))
     interaction_gaps: list[dict[str, str]] = []
     state_specs: list[tuple[str, str, str, str, dict[str, Any]]] = []
-    for screen in data.get("screens", []):
+    for screen in screens:
         screen_id = screen["id"]
         state_specs.append((screen_id, "default", screen["default"], "page", screen))
         for overlay in screen.get("overlays", []):
@@ -635,7 +750,8 @@ def main() -> None:
         source = (flow_path.parent / psd_rel).resolve()
         if not source.is_file():
             fail(f"missing PSD: {psd_rel}")
-        state_dir = output / screen_id / state_id
+        page_dir = output / screen_files[screen_id]["asset_dir"]
+        state_dir = page_dir / state_id
         command = [sys.executable, str(exporter), str(source), str(state_dir)]
         if args.force:
             command.append("--force")
@@ -744,12 +860,23 @@ def main() -> None:
             "from": normalize_key(transition["from"]),
             "trigger": transition["trigger"],
             "to": normalize_key(transition_target(transition, "to")),
+            "overlay": transition.get("overlay"),
         })
 
     (output / "font-audit.json").write_text(json.dumps(runtime["font_audit"], ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     runtime["interaction_gaps"] = interaction_gaps
+    runtime["initial_html"] = screen_files[screens[0]["id"]]["html"]
     (output / "flow-build.json").write_text(json.dumps(runtime, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    write_runtime(output, runtime)
+    for screen in screens:
+        screen_id = screen["id"]
+        page_info = screen_files[screen_id]
+        page_dir = output / page_info["asset_dir"]
+        page_dir.mkdir(parents=True, exist_ok=True)
+        local_runtime = page_runtime(runtime, screen_id, page_info, screen_files, data.get("transitions", []))
+        local_runtime["interaction_gaps"] = [
+            gap for gap in interaction_gaps if gap.get("state", "").startswith(f"{screen_id}:")
+        ]
+        write_runtime(page_dir, local_runtime, output / page_info["html"], output)
     font_gaps = [item["name"] for item in runtime["font_audit"].get("missing_mapping", [])]
     font_gaps += [item["name"] for item in runtime["font_audit"].get("missing_source", [])]
     font_build_errors = [item["name"] for item in runtime["font_audit"].get("compression_errors", []) if item.get("name")]
@@ -764,6 +891,8 @@ def main() -> None:
             print(f"  - {gap['state']} -> {gap['trigger']}: {gap['reason']}", file=sys.stderr)
     print(json.dumps({
         "output": str(output),
+        "initial_html": runtime["initial_html"],
+        "pages": {screen_id: info["html"] for screen_id, info in screen_files.items()},
         "states": len(runtime["states"]),
         "transitions": len(runtime["transitions"]),
         "text_mode": runtime["text_mode"],

@@ -10,6 +10,7 @@ Use `flow.json` only when the task has multiple screens or multiple visual state
 - `project.platform`: `mobile`, `pc`, or `universal`. This describes the intended viewport family; it does not change PSD coordinates.
 - `project.layout`: use `{ "mode": "canvas", "scale": "down-only", "maxStageWidth": designWidth, "minViewportWidth": 320, "center": true }`. PC projects usually use `minViewportWidth: 1024`; the stage remains centered and scales down when the window is narrower than the design. This is proportional canvas behavior, not automatic responsive reflow.
 - `screens[]`: independent pages. Each screen has one `default` PSD, optional `overlays[]`, and optional `elements[]`.
+- Each `screens[]` item is also an output boundary: `build_flow.py` generates one HTML document for it, named from `title` when provided or from `id` otherwise. Page CSS, JavaScript, state assets, and overlays are isolated under the matching `<name>.assets/` directory. The flow build does not use one shared `index.html` for multiple screens.
 - `overlays[]`: dialogs, drawers, masks, bottom sheets, and other visual layers belonging to the current screen. Overlay entries do not have a user-facing `mode` field. They may contain their own `elements[]`; these are the preferred owners for close, submit, confirm, and back controls inside that overlay.
 - `base`: optional screen state covered by an overlay. `excludeLayers` can remove duplicate full-canvas base layers from the overlay PSD. The runtime renders the base layers first and overlay layers above them.
 - `elements[]`: user-described interaction targets. Prefer a stable `id`, a PSD `layer` name, and a plain-language `description`. Use `bounds: [left, top, right, bottom]` when no reliable layer name exists.
@@ -17,17 +18,19 @@ Use `flow.json` only when the task has multiple screens or multiple visual state
 - `project.fonts`: maps the exact font names found in PSD text layers to source files under the project. `validate_flow.py` and `build_flow.py` automatically add suggested mappings for newly discovered names; `scripts/analyze_fonts.py flow.json --update` can be run explicitly for a readable preflight report. The user must place each TTF/OTF/TTC/OTC file under `fonts/` and confirm the path. The `file` path is authoritative; `format` is only metadata, so a configured `.otf` file is used even if `format` still says `ttf`. For a font collection, optional `fontNumber` selects a face; if omitted, the builder matches the PSD font name and records the selected face and candidates in `font-audit.json`. The builder audits these files, subsets the glyphs, emits `WOFF2` plus `WOFF`, and injects `@font-face` rules. A build with missing font files is incomplete and exits with code 3 unless `--allow-missing-fonts` is explicitly used.
 - `project.fonts.<PSD font>.fallbackCategory`: optional `cjk`, `latin`, or `serif` hint for the skill's bundled fallback stack. The default is inferred from the PSD font name and text content. Bundled fallbacks are always present as secondary families after the exact generated WebFont in each semantic layer's CSS `font-family`; they are copied locally into `output/fonts/` and do not satisfy the exact-font audit. If the exact font is unavailable in an explicitly allowed preview, the same stack starts from the bundled families and still reports the missing exact font.
 - `transitions[]`: page and overlay interactions. A page transition uses `from: "页面A"` and `to: "页面B"`; opening an overlay uses `from: "页面A"`, `to: "页面A"`, and `overlay: "弹层ID"`. A transition from an open overlay may use `from: "页面A#弹层ID"`.
+- A transition with `to` equal to the current screen is handled inside that screen HTML. A transition with a different `to` screen navigates to the generated HTML for that screen. `overlay` is page-local and must not be used to merge two independent screens.
 
 ## Authoring Rules
 
 1. Keep the default PSD and all overlays for one screen at the same canvas size and alignment.
 2. Put every independent page in `screens[]`; put dialogs and drawers inside that page's `overlays[]`.
-3. Describe design intent in `description` fields. Explain what an element means, what a click should do, and which state should appear.
-4. Use stable IDs that describe intent, such as `open-settings`, `asset-card`, and `close-dialog`. Do not use generated layer indexes as IDs.
-5. Put overlay-owned buttons in `screens[].overlays[].elements[]` when their bounds or PSD layer differs from the base page. If you only describe the interaction at screen level, the builder can inherit matching element IDs from the page automatically.
-6. Keep page transitions and overlay transitions explicit. Do not infer a destructive action or a business API from visual appearance alone.
-7. For long design notes, place a Markdown note beside the PSD under `notes/` and reference its path from the screen or state with `notes`.
-8. Treat the PSD canvas pixel as the only canonical geometry unit. Derive every element size, margin, padding, gap, text box, and hotspot from that coordinate system. Convert to H5 CSS at the shared stage boundary; do not mix fixed px, vw, rpx, or upx per element.
+3. Treat each `screens[]` object as an HTML ownership boundary. Do not put two independent pages into one screen, and do not implement a cross-page transition by hiding/showing another page-sized container in the current document.
+4. Describe design intent in `description` fields. Explain what an element means, what a click should do, and which state should appear.
+5. Use stable IDs that describe intent, such as `open-settings`, `asset-card`, and `close-dialog`. Do not use generated layer indexes as IDs.
+6. Put overlay-owned buttons in `screens[].overlays[].elements[]` when their bounds or PSD layer differs from the base page. If you only describe the interaction at screen level, the builder can inherit matching element IDs from the page automatically.
+7. Keep page transitions and overlay transitions explicit. Do not infer a destructive action or a business API from visual appearance alone.
+8. For long design notes, place a Markdown note beside the PSD under `notes/` and reference its path from the screen or state with `notes`.
+9. Treat the PSD canvas pixel as the only canonical geometry unit. Derive every element size, margin, padding, gap, text box, and hotspot from that coordinate system. Convert to H5 CSS at the shared stage boundary; do not mix fixed px, vw, rpx, or upx per element.
 
 ## Example
 
@@ -38,6 +41,7 @@ Use `flow.json` only when the task has multiple screens or multiple visual state
   "screens": [
     {
       "id": "个人中心",
+      "title": "个人中心",
       "default": "psd/个人中心默认.psd",
       "description": "个人中心默认页面，包含资产、订单、常用功能和底部导航。",
       "elements": [

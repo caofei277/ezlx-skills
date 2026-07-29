@@ -57,6 +57,16 @@ def safe_filename(name: str, index: int) -> str:
     return f"{index:04d}-{ascii_name or 'layer'}.png"
 
 
+def html_filename(source_stem: str) -> str:
+    """Use the PSD title as the standalone preview document name."""
+    stem = re.sub(r"[\x00-\x1f<>:\"/\\|?*]+", "-", source_stem.strip())
+    stem = re.sub(r"\s+", "-", stem)
+    stem = re.sub(r"-{2,}", "-", stem).strip(" .-_") or "psd-page"
+    if stem.lower() in {".", "..", "index"}:
+        stem = f"{stem}-page"
+    return f"{stem}.html"
+
+
 def as_bounds(value: Any) -> list[int] | None:
     if value is None:
         return None
@@ -198,7 +208,7 @@ def render_layer(
     return image.convert("RGBA"), "topil-fallback", composite_error, as_bounds(getattr(layer, "bbox", None))
 
 
-def write_h5(output: Path, width: int, height: int, layers: list[dict[str, Any]], text_mode: str) -> None:
+def write_h5(output: Path, width: int, height: int, layers: list[dict[str, Any]], text_mode: str, html_name: str) -> None:
     html_layers: list[str] = []
     for index, layer in enumerate(layers):
         left, top, right, bottom = layer["bounds"]
@@ -248,7 +258,7 @@ body {{ min-width: 320px; background: #f2f2f2; }}
 .psd-text {{ overflow: visible; color: #3d3026; font-size: min(calc(var(--font-size) * 100vw / var(--design-width)), calc(var(--font-size) * 1px)); line-height: 1; white-space: nowrap; }}
 @media (min-width: 520px) {{ .preview {{ padding: 28px 0; }} .psd-stage {{ border-radius: 12px; box-shadow: 0 12px 40px rgba(34,24,14,.16); }} }}
 '''
-    (output / "index.html").write_text(html, encoding="utf-8")
+    (output / html_name).write_text(html, encoding="utf-8")
     (output / "styles.css").write_text(css, encoding="utf-8")
 
 
@@ -380,7 +390,7 @@ def main() -> None:
         "errors": errors,
     }
     (output / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
-    write_h5(output, width, height, layers, args.text_mode)
+    write_h5(output, width, height, layers, args.text_mode, html_filename(source.stem))
     print(json.dumps({"canvas": [width, height], "exported_layers": len(layers), "text_layers": manifest["text_layer_count"], "errors": len(errors), "effect_fallbacks": manifest["effect_fallback_count"], "output": str(output)}, ensure_ascii=False))
     if any(error.get("fatal") for error in errors):
         raise SystemExit(3)

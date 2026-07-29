@@ -31,7 +31,10 @@ def main() -> int:
             failures.append(f"missing asset for layer {layer.get('name')!r}: {asset}")
         if not isinstance(bounds, list) or len(bounds) != 4:
             failures.append(f"invalid bounds for layer {layer.get('name')!r}")
-    for filename in ("index.html", "styles.css", "preview.png"):
+    html_files = [path for path in output.glob("*.html") if path.is_file()]
+    if not html_files:
+        failures.append("missing generated HTML preview (expected a page-named .html file)")
+    for filename in ("styles.css", "preview.png"):
         if not (output / filename).is_file():
             failures.append(f"missing generated file: {filename}")
     errors = data.get("errors", []) or []
