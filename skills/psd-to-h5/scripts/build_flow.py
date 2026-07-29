@@ -381,6 +381,7 @@ def main() -> None:
         runtime["font_audit"]["psd_required"] = font_scan["required"]
         runtime["font_audit"]["missing_mapping"] = source_audit["missing_mapping"]
         runtime["font_audit"]["missing_source"] = source_audit["missing_source"]
+        runtime["font_audit"]["format_mismatches"] = source_audit.get("format_mismatches", [])
         runtime["font_audit"]["scan_errors"] = font_scan["errors"]
         runtime["font_audit"]["unconfigured"] = [item["name"] for item in source_audit["missing_mapping"]]
         runtime["font_audit"]["missing"] = source_audit["missing_source"]

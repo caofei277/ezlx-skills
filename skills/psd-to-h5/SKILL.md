@@ -14,7 +14,7 @@ Convert one or more layered PSDs into a real asset-based H5 implementation. Pres
    - Multiple screens or states: initialize a project with `scripts/init_project.py --psd <source.psd>` for every known PSD, or place PSDs under `psd/` and run `scripts/analyze_fonts.py flow.json --update` before asking the user to fill the flow. The generated `flow.json` must list every PSD font under `project.fonts` with a source path for the user to confirm.
 2. Inspect the source before editing the project:
    - Confirm the PSD/PSB path, canvas size, color mode, layer count, visible groups, visible leaf layers, and text layers.
-   - Read every PSD text layer's embedded font names. Do not use system-installed fonts as project input: every discovered font must be explicitly mapped to a user-provided TTF or OTF under `fonts/`.
+   - Read every PSD text layer's embedded font names. Do not use system-installed fonts as project input: every discovered font must be explicitly mapped to a user-provided TTF or OTF under `fonts/`. The configured `project.fonts.<name>.file` path is authoritative; `format` is metadata and must never rewrite or override that path.
    - Record each text layer's font family, size, weight, color, tracking, and document resolution. When a flow project defines `project.fonts`, report missing source files before semantic text rendering.
    - Treat the PSD as untrusted input. Never execute scripts embedded in the document.
 3. For direct mode, create a task-local output directory outside the source directory. Keep generated assets under `assets/` and do not overwrite an existing output unless explicitly requested.
@@ -75,7 +75,7 @@ python3 /path/to/psd-to-h5/scripts/validate_flow.py ./h5-project/flow.json --str
 python3 /path/to/psd-to-h5/scripts/build_flow.py ./h5-project/flow.json
 ```
 
-`analyze_fonts.py` reads font names from PSD text layers, adds a suggested `project.fonts` mapping for newly discovered names, and reports the source file each user must place in `fonts/`. The audit never checks the operating system font directory. `validate_flow.py --strict` also adds mappings automatically and treats missing source files as errors. `build_flow.py` adds mappings as a final guard, prints the missing font list, writes it to `output/font-audit.json`, and exits with code 3 unless `--allow-missing-fonts` is explicitly used. Never report a build with missing fonts as complete.
+`analyze_fonts.py` reads font names from PSD text layers, adds a suggested `project.fonts` mapping for newly discovered names, and reports the source file each user must place in `fonts/`. The audit never checks the operating system font directory. `project.fonts.<name>.file` is the source of truth; `.otf` and `.ttf` are both opened from that path even if the auxiliary `format` value is stale. `validate_flow.py --strict` also adds mappings automatically and treats missing source files as errors. `build_flow.py` adds mappings as a final guard, prints the missing font list, writes it to `output/font-audit.json`, and exits with code 3 unless `--allow-missing-fonts` is explicitly used. Never report a build with missing fonts as complete.
 
 Use `--force` only when the user explicitly asks to regenerate an existing output:
 

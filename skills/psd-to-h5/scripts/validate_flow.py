@@ -205,6 +205,10 @@ def main() -> int:
                     warnings,
                     args.strict,
                 )
+            for item in font_audit.get("format_mismatches", []):
+                warnings.append(
+                    f"font format metadata differs for {item['name']} ({item['file']}); using the file path as authoritative"
+                )
         except RuntimeError as exc:
             issue(f"font audit unavailable: {exc}", errors, warnings, args.strict)
 

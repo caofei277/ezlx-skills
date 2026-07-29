@@ -108,8 +108,8 @@ def flow_psd_paths(flow: dict[str, Any], base_dir: Path) -> list[Path]:
 def suggested_mapping(name: str) -> dict[str, str]:
     safe_name = re.sub(r"[^A-Za-z0-9._-]+", "-", name).strip("-.") or "font"
     return {
-        "file": f"fonts/{safe_name}.ttf",
-        "format": "ttf",
+        "file": f"fonts/{safe_name}.otf",
+        "format": "otf",
         "family": name,
     }
 
@@ -119,6 +119,7 @@ def audit_project_fonts(required: list[dict[str, Any]], project: dict[str, Any],
     configured = configured if isinstance(configured, dict) else {}
     missing_mapping: list[dict[str, Any]] = []
     missing_source: list[dict[str, Any]] = []
+    format_mismatches: list[dict[str, Any]] = []
     for item in required:
         name = item["name"]
         mapping = configured.get(name)
@@ -133,9 +134,21 @@ def audit_project_fonts(required: list[dict[str, Any]], project: dict[str, Any],
                 "file": source_value,
                 "suggested": suggested_mapping(name),
             })
+            continue
+        suffix = source.suffix.lower().lstrip(".")
+        declared = str(mapping.get("format", "")).lower().lstrip(".")
+        if suffix in ("ttf", "otf") and declared in ("ttf", "otf") and suffix != declared:
+            format_mismatches.append({
+                **item,
+                "file": source_value,
+                "declared": declared,
+                "detected": suffix,
+                "message": "file path is authoritative; format is metadata only",
+            })
     return {
         "required": required,
         "missing_mapping": missing_mapping,
         "missing_source": missing_source,
+        "format_mismatches": format_mismatches,
         "ready": not missing_mapping and not missing_source,
     }

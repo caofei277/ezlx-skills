@@ -85,7 +85,7 @@ def main() -> None:
             "project.textMode": {"作用": "字体齐全并成功压缩后是否使用 WebFont 语义文字；失败时自动回退 PNG。", "示例": "semantic"},
             "project.fonts": {"作用": "PSD 字体名到字体源文件的映射，key 必须和 PSD 字体名一致。", "示例": {"SourceHanSansCN-Regular": {"file": "fonts/SourceHanSansCN-Regular.otf", "format": "otf", "family": "Source Han Sans CN"}}},
             "project.fonts[].file": {"作用": "用户放入 fonts/ 目录的 TTF 或 OTF 源字体路径。", "示例": "fonts/SourceHanSansCN-Regular.otf"},
-            "project.fonts[].format": {"作用": "源字体格式，填写 ttf 或 otf。", "示例": "otf"},
+            "project.fonts[].format": {"作用": "源字体格式的辅助标记，填写 ttf 或 otf；实际读取路径以同一项的 file 为准，二者不一致时不会改写 file。", "示例": "otf"},
             "project.fonts[].family": {"作用": "页面使用的字体族显示名称。", "示例": "Source Han Sans CN"},
             "project.fonts[].weight": {"作用": "字体粗细，400 为常规，500 为中等，700 为粗体；可选。", "示例": 400},
             "project.fonts[].style": {"作用": "字体样式，normal 或 italic；可选。", "示例": "normal"},

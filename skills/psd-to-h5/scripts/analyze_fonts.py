@@ -42,6 +42,11 @@ def print_report(flow_path: Path, scan: dict[str, Any], audit: dict[str, Any]) -
         print(f"MISSING FONT FILE: {item['name']} -> {item.get('file') or '(file path not configured)'}")
         print(f"  put the TTF/OTF in fonts/ and set project.fonts.{item['name']}.file")
         print(f"  suggested path: {item['suggested']['file']}")
+    for item in audit.get("format_mismatches", []):
+        print(
+            f"FONT FORMAT NOTE: {item['name']} uses {item['file']} (file={item['detected']}, format={item['declared']}); "
+            "the file path is authoritative and will be used as-is"
+        )
     for item in scan["errors"]:
         print(f"PSD FONT SCAN ERROR: {item['psd']} -> {item['reason']}", file=sys.stderr)
     if audit["ready"] and scan["required"]:
