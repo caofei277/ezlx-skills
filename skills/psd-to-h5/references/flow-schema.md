@@ -31,6 +31,7 @@ Use `flow.json` only when the task has multiple screens or multiple visual state
 7. Keep page transitions and overlay transitions explicit. Do not infer a destructive action or a business API from visual appearance alone.
 8. For long design notes, place a Markdown note beside the PSD under `notes/` and reference its path from the screen or state with `notes`.
 9. Treat the PSD canvas pixel as the only canonical geometry unit. Derive every element size, margin, padding, gap, text box, and hotspot from that coordinate system. Convert to H5 CSS at the shared stage boundary; do not mix fixed px, vw, rpx, or upx per element.
+10. For semantic text, trust the generated manifest's `text_layout` metadata. `single-line` layers must remain on one line; `paragraph` layers must use the PSD text-box width, preserve explicit line breaks, apply the extracted `line_height` and `text_align`, and wrap inside the box. Do not manually replace a paragraph with `nowrap` or a fixed `line-height: 1`.
 
 ## Example
 

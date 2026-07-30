@@ -84,6 +84,62 @@ def layer_text(layer: Any) -> str | None:
     return value if isinstance(value, str) else None
 
 
+def _first_style_data(engine: dict[str, Any]) -> dict[str, Any]:
+    runs = ((engine.get("StyleRun") or {}).get("RunArray") or [])
+    if not runs:
+        return {}
+    return ((runs[0].get("StyleSheet") or {}).get("StyleSheetData") or {})
+
+
+def _first_paragraph_properties(engine: dict[str, Any]) -> dict[str, Any]:
+    runs = ((engine.get("ParagraphRun") or {}).get("RunArray") or [])
+    if not runs:
+        return {}
+    return ((runs[0].get("ParagraphSheet") or {}).get("Properties") or {})
+
+
+def _number(value: Any) -> float | None:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if number == number else None
+
+
+def _justification(value: Any) -> str:
+    return {
+        0: "left",
+        1: "right",
+        2: "center",
+        3: "justify",
+    }.get(value, "left")
+
+
+def text_layout(layer: Any, text: str) -> dict[str, Any]:
+    """Extract paragraph geometry and leading from Photoshop EngineData."""
+    engine = getattr(layer, "engine_dict", {}) or {}
+    style = _first_style_data(engine)
+    paragraph = _first_paragraph_properties(engine)
+    font_size = _number(style.get("FontSize")) or 16.0
+    leading = _number(style.get("Leading"))
+    auto_leading = _number(paragraph.get("AutoLeading")) or 1.2
+    use_auto_leading = bool(style.get("AutoLeading")) or leading is None or leading <= 0
+    line_height = font_size * auto_leading if use_auto_leading else leading
+    is_paragraph = bool(re.search(r"[\r\n]", text)) or paragraph.get("Justification") == 3
+    return {
+        "text_layout": "paragraph" if is_paragraph else "single-line",
+        "line_height": round(line_height, 4),
+        "line_height_source": "auto-leading" if use_auto_leading else "explicit-leading",
+        "auto_leading": auto_leading,
+        "text_align": _justification(paragraph.get("Justification", 0)),
+        "first_line_indent": _number(paragraph.get("FirstLineIndent")) or 0,
+        "start_indent": _number(paragraph.get("StartIndent")) or 0,
+        "end_indent": _number(paragraph.get("EndIndent")) or 0,
+        "space_before": _number(paragraph.get("SpaceBefore")) or 0,
+        "space_after": _number(paragraph.get("SpaceAfter")) or 0,
+    }
+
+
 def text_styles(layer: Any) -> list[dict[str, Any]]:
     """Extract browser-relevant character styles from Photoshop EngineData."""
     if getattr(layer, "kind", None) != "type":
@@ -93,6 +149,7 @@ def text_styles(layer: Any) -> list[dict[str, Any]]:
         resources = getattr(layer, "resource_dict", {}) or {}
         font_set = resources.get("FontSet", []) or []
         runs = ((engine.get("StyleRun") or {}).get("RunArray") or [])
+        paragraph = _first_paragraph_properties(engine)
         styles: list[dict[str, Any]] = []
         for run in runs:
             data = ((run.get("StyleSheet") or {}).get("StyleSheetData") or {})
@@ -103,6 +160,9 @@ def text_styles(layer: Any) -> list[dict[str, Any]]:
                 font_name = str(font_set[index].get("Name", "")).strip().strip("'\"")
             raw_size = data.get("FontSize")
             font_size = float(raw_size) if raw_size is not None else None
+            leading = _number(data.get("Leading"))
+            auto_leading = _number(paragraph.get("AutoLeading")) or 1.2
+            use_auto_leading = bool(data.get("AutoLeading")) or leading is None or leading <= 0
             fill = data.get("FillColor") or {}
             values = fill.get("Values") or []
             color = None
@@ -116,6 +176,8 @@ def text_styles(layer: Any) -> list[dict[str, Any]]:
                 "font_style": "italic" if data.get("FauxItalic") else "normal",
                 "letter_spacing": float(data.get("Tracking", 0) or 0) / 1000,
                 "color": color,
+                "line_height": round((font_size or 16.0) * auto_leading if use_auto_leading else leading, 4),
+                "line_height_source": "auto-leading" if use_auto_leading else "explicit-leading",
             })
         return [style for style in styles if style.get("font_family") or style.get("font_size")]
     except Exception:
@@ -218,11 +280,14 @@ def write_h5(output: Path, width: int, height: int, layers: list[dict[str, Any]]
             f'data-layer="{escape(layer["name"], quote=True)}" data-kind="{layer["kind"]}" '
             f'data-text="{alt}" style="--x:{left};--y:{top};--w:{right-left};--h:{bottom-top};'
             f'--z:{index};--opacity:{1 if layer.get("rendered_opacity") else layer["opacity"] / 255:.4f};'
+            f'--text-align:{layer.get("text_align", "left")};'
         )
         if text_mode == "semantic" and text:
-            font_size = max(8, int((bottom - top) * 0.78))
+            font_size = max(8, float(layer.get("font_size") or (bottom - top) * 0.78))
+            line_height = float(layer.get("line_height") or font_size)
+            text_class = "psd-text psd-paragraph" if layer.get("text_layout") == "paragraph" else "psd-text"
             html_layers.append(
-                f'      <span class="psd-text" {common}--font-size:{font_size};">{escape(text)}</span>'
+                f'      <span class="{text_class}" {common}--font-size:{font_size};--line-height:{line_height};">{escape(text)}</span>'
             )
         else:
             html_layers.append(
@@ -255,7 +320,8 @@ body {{ min-width: 320px; background: #f2f2f2; }}
 .preview {{ display: flex; justify-content: center; min-height: 100vh; }}
 .psd-stage {{ position: relative; width: min(100vw, calc(var(--design-width) * 1px)); aspect-ratio: var(--design-width) / var(--design-height); overflow: hidden; background: #fff; isolation: isolate; }}
 .psd-layer, .psd-text {{ position: absolute; display: block; left: calc(var(--x) * 100% / var(--design-width)); top: calc(var(--y) * 100% / var(--design-height)); width: calc(var(--w) * 100% / var(--design-width)); height: calc(var(--h) * 100% / var(--design-height)); z-index: var(--z); opacity: var(--opacity); user-select: none; -webkit-user-drag: none; }}
-.psd-text {{ overflow: visible; color: #3d3026; font-size: min(calc(var(--font-size) * 100vw / var(--design-width)), calc(var(--font-size) * 1px)); line-height: 1; white-space: nowrap; }}
+.psd-text {{ overflow: visible; color: #3d3026; font-size: min(calc(var(--font-size) * 100vw / var(--design-width)), calc(var(--font-size) * 1px)); line-height: min(calc(var(--line-height) * 100vw / var(--design-width)), calc(var(--line-height) * 1px)); white-space: nowrap; }}
+.psd-paragraph {{ overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; text-align: var(--text-align, left); }}
 @media (min-width: 520px) {{ .preview {{ padding: 28px 0; }} .psd-stage {{ border-radius: 12px; box-shadow: 0 12px 40px rgba(34,24,14,.16); }} }}
 '''
     (output / html_name).write_text(html, encoding="utf-8")
@@ -335,6 +401,7 @@ def main() -> None:
         text = layer_text(layer)
         if text is not None:
             record["text"] = text
+            record.update(text_layout(layer, text))
             styles = text_styles(layer)
             if styles:
                 record["text_styles"] = styles

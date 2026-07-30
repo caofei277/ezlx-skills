@@ -506,7 +506,9 @@ def write_runtime(page_dir: Path, runtime: dict[str, Any], html_path: Path, outp
     layers.forEach((layer, index) => {
       const useText = (runtime.textMode || runtime.text_mode) === 'semantic' && layer.text && layer.font_css_family;
       const node = document.createElement(useText ? 'span' : 'img');
-      node.className = useText ? 'flow-text' : 'flow-layer';
+      node.className = useText
+        ? (layer.text_layout === 'paragraph' ? 'flow-text flow-paragraph' : 'flow-text')
+        : 'flow-layer';
       node.alt = layer.text || '';
       node.dataset.layer = layer.name;
       node.style.cssText = cssPosition(layer.bounds) + '--z:' + index + ';--opacity:' + (layer.rendered_opacity ? 1 : layer.opacity / 255) + ';';
@@ -515,12 +517,19 @@ def write_runtime(page_dir: Path, runtime: dict[str, Any], html_path: Path, outp
         node.textContent = textContent;
         node.style.fontFamily = layer.font_css_family;
         node.style.fontSize = 'min(calc(' + (layer.font_size || 16) + ' * 100vw / ' + runtime.canvas.width + '), calc(' + (layer.font_size || 16) + 'px))';
+        const lineHeight = layer.line_height || layer.font_size || 16;
+        node.style.lineHeight = 'min(calc(' + lineHeight + ' * 100vw / ' + runtime.canvas.width + '), calc(' + lineHeight + 'px))';
         node.style.fontWeight = String(layer.font_weight || 400);
         node.style.fontStyle = layer.font_style || 'normal';
         node.style.letterSpacing = (layer.letter_spacing || 0) + 'em';
         node.style.color = layer.text_color || '#3d3026';
-        node.style.whiteSpace = textContent.includes('\\n') ? 'pre' : 'nowrap';
-        node.style.overflow = 'visible';
+        node.style.textAlign = layer.text_align || 'left';
+        node.style.textIndent = 'min(calc(' + (layer.first_line_indent || 0) + ' * 100vw / ' + runtime.canvas.width + '), calc(' + (layer.first_line_indent || 0) + 'px))';
+        node.style.paddingLeft = 'min(calc(' + (layer.start_indent || 0) + ' * 100vw / ' + runtime.canvas.width + '), calc(' + (layer.start_indent || 0) + 'px))';
+        node.style.paddingRight = 'min(calc(' + (layer.end_indent || 0) + ' * 100vw / ' + runtime.canvas.width + '), calc(' + (layer.end_indent || 0) + 'px))';
+        node.style.whiteSpace = layer.text_layout === 'paragraph' ? 'pre-wrap' : 'nowrap';
+        node.style.overflowWrap = layer.text_layout === 'paragraph' ? 'anywhere' : 'normal';
+        node.style.overflow = layer.text_layout === 'paragraph' ? 'hidden' : 'visible';
       } else {
         node.src = layer.asset;
       }
@@ -605,6 +614,7 @@ body {{ min-width:{layout["minViewportWidth"]}px; background:#f2f2f2; }}
 .flow-stage {{ position:relative; width:min(100vw, {layout["maxStageWidth"]}px); aspect-ratio:{width}/{height}; overflow:hidden; background:#fff; isolation:isolate; }}
 .flow-layer {{ position:absolute; display:block; left:calc(var(--x) * 100% / {width}); top:calc(var(--y) * 100% / {height}); width:calc(var(--w) * 100% / {width}); height:calc(var(--h) * 100% / {height}); z-index:var(--z); opacity:var(--opacity); user-select:none; -webkit-user-drag:none; }}
 .flow-text {{ position:absolute; display:block; left:calc(var(--x) * 100% / {width}); top:calc(var(--y) * 100% / {height}); width:calc(var(--w) * 100% / {width}); height:calc(var(--h) * 100% / {height}); z-index:var(--z); opacity:var(--opacity); overflow:visible; line-height:1; white-space:nowrap; user-select:none; }}
+.flow-paragraph {{ overflow:hidden; white-space:pre-wrap; overflow-wrap:anywhere; }}
 .flow-hotspot {{ position:absolute; left:calc(var(--x) * 100% / {width}); top:calc(var(--y) * 100% / {height}); width:calc(var(--w) * 100% / {width}); height:calc(var(--h) * 100% / {height}); z-index:10000; border:0; background:transparent; cursor:pointer; }}
 .flow-hotspot:focus-visible {{ outline:2px solid #c88735; outline-offset:-2px; border-radius:8px; }}
 .sr-only {{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }}
