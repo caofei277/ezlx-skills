@@ -652,8 +652,19 @@ def page_runtime(
     page_info: dict[str, str],
     screens: dict[str, dict[str, str]],
     transitions: list[dict[str, Any]],
+    canvas: dict[str, int] | None = None,
 ) -> dict[str, Any]:
-    """Project the global build records into one screen-local runtime."""
+    """Project the global build records into one screen-local runtime.
+
+    `canvas` defaults to the screen's own default-state canvas recorded from
+    the PSD manifest, so pages with different design heights (for example a
+    750x3230 home page next to 750x1630 profile pages) each keep their own
+    stage aspect ratio and layer percentages. Falls back to the global canvas
+    when the state manifest did not record one.
+    """
+    if canvas is None:
+        canvas = runtime.get("state_canvas", {}).get(f"{screen_id}:default") or runtime["canvas"]
+    layout = resolve_layout(runtime.get("_project_config", {}), canvas["width"])
     prefix = f"{screen_id}:"
     states: dict[str, Any] = {}
     for key, state in runtime["states"].items():
@@ -695,8 +706,8 @@ def page_runtime(
         })
 
     return {
-        "canvas": runtime["canvas"],
-        "layout": runtime["layout"],
+        "canvas": canvas,
+        "layout": layout,
         "initial": "default",
         "states": states,
         "transitions": local_transitions,
@@ -742,6 +753,11 @@ def main() -> None:
         "font_audit": {},
     }
     runtime["layout"] = resolve_layout(project, runtime["canvas"]["width"])
+    runtime["_project_config"] = {
+        "platform": project.get("platform", "universal"),
+        "layout": project.get("layout", {}),
+    }
+    runtime["state_canvas"] = {}
     trigger_index = transition_trigger_index(data.get("transitions", []))
     interaction_gaps: list[dict[str, str]] = []
     state_specs: list[tuple[str, str, str, str, dict[str, Any]]] = []
@@ -815,6 +831,12 @@ def main() -> None:
         if mode == "overlay":
             state_record["base"] = normalize_key(spec.get("base", screen_id))
         runtime["states"][key] = state_record
+        manifest_canvas = manifest.get("canvas")
+        if isinstance(manifest_canvas, dict) and manifest_canvas.get("width") and manifest_canvas.get("height"):
+            runtime["state_canvas"][key] = {
+                "width": int(manifest_canvas["width"]),
+                "height": int(manifest_canvas["height"]),
+            }
 
     font_result = build_fonts(flow_path, output, project, runtime["states"])
     runtime["fonts"] = font_result["fonts"]
