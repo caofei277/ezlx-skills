@@ -149,6 +149,27 @@ def resolve_layout(project: dict[str, Any], width: int) -> dict[str, Any]:
     }
 
 
+def page_layout_config(project: dict[str, Any], canvas_width: int) -> dict[str, Any]:
+    """Adapt the project canvas defaults to a screen-specific PSD width."""
+    config = {
+        "platform": project.get("platform", "universal"),
+        "layout": dict(project.get("layout", {}) or {}),
+    }
+    layout = config["layout"]
+    configured_max = layout.get("maxStageWidth")
+    project_width = project.get("designWidth")
+    # An explicit maxStageWidth is a deliberate display cap. The usual value
+    # is the project design width, which should follow each page's real canvas.
+    if configured_max is None or configured_max == project_width:
+        layout["maxStageWidth"] = canvas_width
+    else:
+        try:
+            layout["maxStageWidth"] = min(int(configured_max), canvas_width)
+        except (TypeError, ValueError):
+            layout["maxStageWidth"] = canvas_width
+    return config
+
+
 def layer_matches_exclusion(layer: dict[str, Any], exclusions: list[Any]) -> bool:
     """Match explicit layer names or PSD paths used to remove duplicate overlay bases."""
     path = layer.get("path", [])
@@ -664,7 +685,7 @@ def page_runtime(
     """
     if canvas is None:
         canvas = runtime.get("state_canvas", {}).get(f"{screen_id}:default") or runtime["canvas"]
-    layout = resolve_layout(runtime.get("_project_config", {}), canvas["width"])
+    layout = resolve_layout(page_layout_config(runtime.get("_project_config", {}), canvas["width"]), canvas["width"])
     prefix = f"{screen_id}:"
     states: dict[str, Any] = {}
     for key, state in runtime["states"].items():
@@ -720,6 +741,36 @@ def page_runtime(
     }
 
 
+def validate_screen_canvases(
+    screens: list[dict[str, Any]],
+    state_canvas: dict[str, dict[str, int]],
+) -> None:
+    """Require page-owned overlays to share the default page canvas."""
+    for screen in screens:
+        screen_id = screen["id"]
+        default_key = f"{screen_id}:default"
+        default_canvas = state_canvas.get(default_key)
+        if not default_canvas:
+            fail(f"{screen_id} default PSD manifest has no canvas dimensions")
+        entries: list[dict[str, Any]] = []
+        for overlay in screen.get("overlays", []) or []:
+            entries.append({"id": overlay.get("id"), "psd": overlay.get("psd")})
+        for state in screen.get("states", []) or []:
+            if state.get("mode", "overlay") == "overlay":
+                entries.append({"id": state.get("id"), "psd": state.get("psd")})
+        for entry in entries:
+            state_id = entry.get("id")
+            actual = state_canvas.get(f"{screen_id}:{state_id}")
+            if not actual:
+                fail(f"{screen_id}:{state_id} PSD manifest has no canvas dimensions")
+            if actual != default_canvas:
+                fail(
+                    f"{screen_id}:{state_id} canvas {actual['width']}x{actual['height']} "
+                    f"does not match default canvas {default_canvas['width']}x{default_canvas['height']}; "
+                    "page-owned overlays must use the same canvas and coordinates"
+                )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("flow", type=Path)
@@ -756,6 +807,7 @@ def main() -> None:
     runtime["_project_config"] = {
         "platform": project.get("platform", "universal"),
         "layout": project.get("layout", {}),
+        "designWidth": project.get("designWidth", 750),
     }
     runtime["state_canvas"] = {}
     trigger_index = transition_trigger_index(data.get("transitions", []))
@@ -827,7 +879,13 @@ def main() -> None:
             if not asset:
                 continue
             layers.append({**layer, "asset": (state_dir / asset).relative_to(output).as_posix()})
-        state_record = {"title": spec.get("description", key), "mode": mode, "layers": layers, "elements": elements}
+        state_record = {
+            "title": spec.get("description", key),
+            "mode": mode,
+            "layers": layers,
+            "elements": elements,
+            "manifest": (state_dir / "manifest.json").relative_to(output).as_posix(),
+        }
         if mode == "overlay":
             state_record["base"] = normalize_key(spec.get("base", screen_id))
         runtime["states"][key] = state_record
@@ -838,6 +896,7 @@ def main() -> None:
                 "height": int(manifest_canvas["height"]),
             }
 
+    validate_screen_canvases(screens, runtime["state_canvas"])
     font_result = build_fonts(flow_path, output, project, runtime["states"])
     runtime["fonts"] = font_result["fonts"]
     runtime["fallback_fonts"] = font_result["bundled"]

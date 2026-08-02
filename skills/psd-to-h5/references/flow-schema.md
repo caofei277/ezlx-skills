@@ -11,7 +11,9 @@ Use `flow.json` only when the task has multiple screens or multiple visual state
 - `project.layout`: use `{ "mode": "canvas", "scale": "down-only", "maxStageWidth": designWidth, "minViewportWidth": 320, "center": true }`. PC projects usually use `minViewportWidth: 1024`; the stage remains centered and scales down when the window is narrower than the design. This is proportional canvas behavior, not automatic responsive reflow.
 - `screens[]`: independent pages. Each screen has one `default` PSD, optional `overlays[]`, and optional `elements[]`.
 - Each `screens[]` item is also an output boundary: `build_flow.py` generates one HTML document for it, named from `title` when provided or from `id` otherwise. Page CSS, JavaScript, state assets, and overlays are isolated under the matching `<name>.assets/` directory. The flow build does not use one shared `index.html` for multiple screens.
+- Each screen's default state's exported `manifest.json` is the canvas authority for that page. Its actual PSD width and height control the page stage aspect ratio and all percentage-based coordinates, so screens in one project may have different heights or widths without sharing a forced global canvas.
 - `overlays[]`: dialogs, drawers, masks, bottom sheets, and other visual layers belonging to the current screen. Overlay entries do not have a user-facing `mode` field. They may contain their own `elements[]`; these are the preferred owners for close, submit, confirm, and back controls inside that overlay.
+- Every page-owned overlay must have the same canvas width, height, and coordinate alignment as its screen's default PSD. A mismatch is a build error, not a reason to scale, stretch, or crop the overlay.
 - `base`: optional screen state covered by an overlay. `excludeLayers` can remove duplicate full-canvas base layers from the overlay PSD. The runtime renders the base layers first and overlay layers above them.
 - `elements[]`: user-described interaction targets. Prefer a stable `id`, a PSD `layer` name, and a plain-language `description`. Use `bounds: [left, top, right, bottom]` when no reliable layer name exists.
 - `overlays[].elements[]`: optional interaction targets owned by one overlay. If omitted, the builder infers overlay elements from `screens[].elements` whose IDs match transitions originating from that overlay state. A transition with no resolvable element is a build error.
@@ -32,6 +34,7 @@ Use `flow.json` only when the task has multiple screens or multiple visual state
 8. For long design notes, place a Markdown note beside the PSD under `notes/` and reference its path from the screen or state with `notes`.
 9. Treat the PSD canvas pixel as the only canonical geometry unit. Derive every element size, margin, padding, gap, text box, and hotspot from that coordinate system. Convert to H5 CSS at the shared stage boundary; do not mix fixed px, vw, rpx, or upx per element.
 10. For semantic text, trust the generated manifest's `text_layout` metadata. `single-line` layers must remain on one line; `paragraph` layers must use the PSD text-box width, preserve explicit line breaks, apply the extracted `line_height` and `text_align`, and wrap inside the box. Do not manually replace a paragraph with `nowrap` or a fixed `line-height: 1`.
+11. Treat `flow-build.json` as a build record, not a substitute for validation. `scripts/validate_output.py` must check every page document, every state manifest including empty states, every referenced asset, and all effect/fatal errors before delivery.
 
 ## Example
 
