@@ -538,8 +538,21 @@ def write_runtime(page_dir: Path, runtime: dict[str, Any], html_path: Path, outp
         node.textContent = textContent;
         node.style.fontFamily = layer.font_css_family;
         node.style.fontSize = 'min(calc(' + (layer.font_size || 16) + ' * 100vw / ' + runtime.canvas.width + '), calc(' + (layer.font_size || 16) + 'px))';
-        const lineHeight = layer.line_height || layer.font_size || 16;
-        node.style.lineHeight = 'min(calc(' + lineHeight + ' * 100vw / ' + runtime.canvas.width + '), calc(' + lineHeight + 'px))';
+        const fontSize = layer.font_size || 16;
+        const boxHeight = layer.bounds ? layer.bounds[3] - layer.bounds[1] : fontSize;
+        // PSD sometimes marks wrapped multi-line text as single-line; detect by box height.
+        const isParagraph = layer.text_layout === 'paragraph' || boxHeight > fontSize * 1.4;
+        // PSD leading is baseline-to-baseline spacing; CSS line-height is the line box height.
+        // For single-line text the PSD bounds box is the exact glyph box, so use its
+        // height as line-height to keep glyphs starting at the box top.
+        // For paragraph text keep the PSD leading for line spacing but compensate the
+        // first-line half-leading offset so the first line starts at the box top.
+        const cssLineHeight = isParagraph ? (layer.line_height || fontSize) : boxHeight;
+        node.style.lineHeight = 'min(calc(' + cssLineHeight + ' * 100vw / ' + runtime.canvas.width + '), calc(' + cssLineHeight + 'px))';
+        if (isParagraph && cssLineHeight > fontSize) {
+          const halfLeading = (cssLineHeight - fontSize) / 2;
+          node.style.marginTop = 'min(calc(-' + halfLeading + ' * 100vw / ' + runtime.canvas.width + '), calc(-' + halfLeading + 'px))';
+        }
         node.style.fontWeight = String(layer.font_weight || 400);
         node.style.fontStyle = layer.font_style || 'normal';
         node.style.letterSpacing = (layer.letter_spacing || 0) + 'em';
@@ -548,9 +561,19 @@ def write_runtime(page_dir: Path, runtime: dict[str, Any], html_path: Path, outp
         node.style.textIndent = 'min(calc(' + (layer.first_line_indent || 0) + ' * 100vw / ' + runtime.canvas.width + '), calc(' + (layer.first_line_indent || 0) + 'px))';
         node.style.paddingLeft = 'min(calc(' + (layer.start_indent || 0) + ' * 100vw / ' + runtime.canvas.width + '), calc(' + (layer.start_indent || 0) + 'px))';
         node.style.paddingRight = 'min(calc(' + (layer.end_indent || 0) + ' * 100vw / ' + runtime.canvas.width + '), calc(' + (layer.end_indent || 0) + 'px))';
-        node.style.whiteSpace = layer.text_layout === 'paragraph' ? 'pre-wrap' : 'nowrap';
-        node.style.overflowWrap = layer.text_layout === 'paragraph' ? 'anywhere' : 'normal';
-        node.style.overflow = layer.text_layout === 'paragraph' ? 'hidden' : 'visible';
+        node.style.whiteSpace = isParagraph ? 'pre-wrap' : 'nowrap';
+        node.style.overflowWrap = isParagraph ? 'anywhere' : 'normal';
+        node.style.overflow = 'visible';
+        // Manual line breaks (\\r) rendered with pre-wrap can gain an extra wrapped
+        // line when the browser font is slightly wider than the PSD font and a line
+        // exactly fills the box width. Only for manual-break texts (psd_line_count
+        // equals the segment count): count real rendered line boxes after the node is
+        // in the DOM and switch to pre if there are more than the PSD line count.
+        if (layer.psd_line_count > 0 && layer.text && layer.text.indexOf('\\r') !== -1) {
+          const segCount = layer.text.split('\\r').length;
+          if (layer.psd_line_count === segCount) {
+            node.dataset.fixManualLines = String(layer.psd_line_count);          }
+        }
       } else {
         node.src = layer.asset;
       }
@@ -567,7 +590,31 @@ def write_runtime(page_dir: Path, runtime: dict[str, Any], html_path: Path, outp
       stage.append(button);
     }
     title.textContent = state.title || runtime.page.title || stateKey;
+    fixManualLineBreaks();
   }
+
+  // Manual line breaks (\\r) rendered with pre-wrap can gain an extra wrapped line
+  // when the browser font is slightly wider than the PSD font and a line exactly
+  // fills the box width. Only for manual-break texts (psd_line_count equals the
+  // segment count): count real rendered line boxes after fonts are ready and switch
+  // to pre if there are more lines than the PSD line count.
+  function fixManualLineBreaks() {
+    for (const node of stage.querySelectorAll('.flow-text[data-fix-manual-lines]')) {
+      const expected = Number(node.dataset.fixManualLines);
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      const rects = Array.from(range.getClientRects()).filter(r => r.width > 1);
+      if (rects.length > expected) {
+        node.style.whiteSpace = 'pre';
+        // The PSD renderer ignores trailing whitespace on each line, but pre
+        // preserves it and inflates the line width. Trim trailing spaces per
+        // line so rendered width matches the PSD line width.
+        node.textContent = node.textContent.split('\\n').map(s => s.trimEnd()).join('\\n');
+      }
+    }
+  }
+  const fontReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+  fontReady.then(fixManualLineBreaks);
 
   function transition(trigger) {
     const match = runtime.transitions.find(item => item.from === current && item.trigger === trigger);
@@ -632,10 +679,10 @@ def write_runtime(page_dir: Path, runtime: dict[str, Any], html_path: Path, outp
 html,body {{ margin:0; min-height:100%; }}
 body {{ min-width:{layout["minViewportWidth"]}px; background:#f2f2f2; }}
 .flow-preview {{ display:flex; justify-content:{justify_content}; min-height:100vh; }}
-.flow-stage {{ position:relative; width:min(100vw, {layout["maxStageWidth"]}px); aspect-ratio:{width}/{height}; overflow:hidden; background:#fff; isolation:isolate; }}
+.flow-stage {{ position:relative; width:min(100vw, {layout["maxStageWidth"]}px); aspect-ratio:{width}/{height}; overflow:hidden; background:#fff; isolation:isolate; align-self:flex-start; }}
 .flow-layer {{ position:absolute; display:block; left:calc(var(--x) * 100% / {width}); top:calc(var(--y) * 100% / {height}); width:calc(var(--w) * 100% / {width}); height:calc(var(--h) * 100% / {height}); z-index:var(--z); opacity:var(--opacity); user-select:none; -webkit-user-drag:none; }}
 .flow-text {{ position:absolute; display:block; left:calc(var(--x) * 100% / {width}); top:calc(var(--y) * 100% / {height}); width:calc(var(--w) * 100% / {width}); height:calc(var(--h) * 100% / {height}); z-index:var(--z); opacity:var(--opacity); overflow:visible; line-height:1; white-space:nowrap; user-select:none; }}
-.flow-paragraph {{ overflow:hidden; white-space:pre-wrap; overflow-wrap:anywhere; }}
+.flow-paragraph {{ overflow:visible; white-space:pre-wrap; overflow-wrap:anywhere; }}
 .flow-hotspot {{ position:absolute; left:calc(var(--x) * 100% / {width}); top:calc(var(--y) * 100% / {height}); width:calc(var(--w) * 100% / {width}); height:calc(var(--h) * 100% / {height}); z-index:10000; border:0; background:transparent; cursor:pointer; }}
 .flow-hotspot:focus-visible {{ outline:2px solid #c88735; outline-offset:-2px; border-radius:8px; }}
 .sr-only {{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }}

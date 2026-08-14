@@ -126,7 +126,7 @@ def text_layout(layer: Any, text: str) -> dict[str, Any]:
     use_auto_leading = bool(style.get("AutoLeading")) or leading is None or leading <= 0
     line_height = font_size * auto_leading if use_auto_leading else leading
     is_paragraph = bool(re.search(r"[\r\n]", text)) or paragraph.get("Justification") == 3
-    return {
+    result = {
         "text_layout": "paragraph" if is_paragraph else "single-line",
         "line_height": round(line_height, 4),
         "line_height_source": "auto-leading" if use_auto_leading else "explicit-leading",
@@ -138,6 +138,27 @@ def text_layout(layer: Any, text: str) -> dict[str, Any]:
         "space_before": _number(paragraph.get("SpaceBefore")) or 0,
         "space_after": _number(paragraph.get("SpaceAfter")) or 0,
     }
+    # Count actual rendered line blocks in the PSD glyph pixels. This distinguishes
+    # manual line breaks (PSD lines == segment count) from auto-wrapped paragraphs
+    # (PSD lines > segment count), which the browser must keep in pre-wrap mode.
+    try:
+        img = layer.composite().convert("RGBA")
+        alpha = img.getchannel("A")
+        w, h = img.size
+        blocks = 0
+        in_block = False
+        for y in range(h):
+            row = alpha.crop((0, y, w, y + 1))
+            if row.getextrema()[1] > 10:
+                if not in_block:
+                    blocks += 1
+                    in_block = True
+            else:
+                in_block = False
+        result["psd_line_count"] = blocks
+    except Exception:
+        result["psd_line_count"] = 0
+    return result
 
 
 def text_styles(layer: Any) -> list[dict[str, Any]]:
