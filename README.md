@@ -116,6 +116,17 @@ difit --pr https://github.com/owner/repo/pull/123
 | `curl: (35) Connection reset` | GFW 干扰 GitHub 连接 |
 | 下载完成但文件损坏 | GFW 静默截断下载，curl 未报错 |
 
+### codeup-pat
+
+使用云效 Codeup 个人访问令牌（`pt-` 开头）调用 Codeup OpenAPI 与 git 操作的实测指南。
+
+**功能**：
+- 正确网关与认证头（`openapi-rdc.aliyuncs.com` + `x-yunxiao-token`），避开 API v4 / AK 网关等走不通的路
+- 验证令牌、列企业空间/代码组/仓库、创建代码组与代码库的完整接口清单与 curl 示例
+- 建组 + 建仓 + 本地首推的一体化流程脚本
+- 踩坑记录：新建仓库自动生成的模板 README 首推处理、302/MissingAccessKeyId/NotFound 报错诊断
+- 令牌安全红线（不落仓库、不进 URL 持久化、泄露即吊销）
+
 ### 安装指定 Skill
 
 ```bash
