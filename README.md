@@ -127,6 +127,20 @@ difit --pr https://github.com/owner/repo/pull/123
 - 踩坑记录：新建仓库自动生成的模板 README 首推处理、302/MissingAccessKeyId/NotFound 报错诊断
 - 令牌安全红线（不落仓库、不进 URL 持久化、泄露即吊销）
 
+### icon-freedom
+
+图标自由：任意项目的图标治理全链路——检索 → 初筛 → 圈选 → 一键入库 → 构建 → 替换 → 展示页，产出跨端通用的图标字体（woff2/ttf + CSS，SVG 只是源稿）。
+
+**功能**：
+- 三层图标来源全贯通：主干库直连（Remix 首选免描摹 / Tabler / Lucide）+ **Iconify 聚合源（243 集 / 20 万+ 图标，支持跨库搜索）** + 自定义 SVG 同管线
+- `fetch_icons.py` 主干库/聚合源候选直链下载与跨库语义搜索（禁 unpkg/flat listing 弯路）
+- `icon_add.py` **一键入库主入口**：stroke/fill 自动路由（stroke → potrace 高分辨率描摹 + 绕向修正）、fantasticon 建字体、fontTools 三件套验证（轮廓数/嵌套绕向/码点，坏字形当场拒绝）、manifest 台账、showcase 展示页自动再生成
+- `build_showcase.py` 项目图标 H5 展示页：单文件自包含（file:// 双击即开），全量预览、关键字检索、加入时间默认排序、点击复制类名
+- 风格量化定标：五维分析（线性/面性、笔画比、圆角、栅格留白、墨水密度），fill 技术带孔洞轮廓形按视觉线性放行
+- 已实战：uni-app 商城我的页 22 处位图全量矢量化（H5/APP 实测，小程序兼容垫平），单图标 5~8 分钟、整页 17 分钟
+
+**依赖自举**：首跑自动 `npm install` fantasticon/potrace/sharp 进技能目录（node_modules 不入库）；Python 侧 fontTools/Pillow/rsvg-convert 可选，缺了自动降级并提示。
+
 ### 安装指定 Skill
 
 ```bash

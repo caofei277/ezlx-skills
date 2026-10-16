@@ -1,0 +1,23 @@
+{
+  "project": "填写项目名",
+  "style": "linear",
+  "grid": 24,
+  "stroke_px": 2,
+  "caps": { "linecap": "round", "linejoin": "round" },
+  "color": "currentColor",
+  "scenes": {
+    "default": { "style": "linear" },
+    "tabbar": { "style": "fill" }
+  },
+  "build": {
+    "src_dir": "src/static/icons-src",
+    "out_dir": "src/static/font/iconfont",
+    "font_name": "iconfont",
+    "class_prefix": "icon",
+    "formats": ["woff2", "woff", "ttf"],
+    "base64": false,
+    "font_height": 1024,
+    "start_codepoint": "0xe600"
+  },
+  "reference_dir": "src/static/icons-src/_reference"
+}
